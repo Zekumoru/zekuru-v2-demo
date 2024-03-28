@@ -4,5 +4,11 @@
   "description": "A tutorial bot.",
   "main": "app.ts",
   "author": "Zekumoru",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
 }
