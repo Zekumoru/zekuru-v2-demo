@@ -6,7 +6,8 @@
   "author": "Zekumoru",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.14.1"
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "eslint": "^8.57.0"
