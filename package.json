@@ -5,6 +5,9 @@
   "main": "app.ts",
   "author": "Zekumoru",
   "license": "MIT",
+  "scripts": {
+    "dev": "nodemon --files"
+  },
   "dependencies": {
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
