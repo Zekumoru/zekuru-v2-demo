@@ -6,7 +6,9 @@ const data = new SlashCommandBuilder()
   .setDescription('Cute Shewi?');
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
-  await interaction.reply('Shewi is super kawaii! >~<');
+  await interaction.reply(
+    'Shewi is super kawaii! <:shewi:1209315162574684160>'
+  );
 };
 
 export default createCommand({
