@@ -44,4 +44,5 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 export default createCommand({
   data,
   execute,
+  devOnly: true,
 });

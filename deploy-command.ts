@@ -59,7 +59,9 @@ interface RestResult {
 (async () => {
   try {
     console.log(
-      `Started refreshing ${commands.length} application (/) commands.`
+      `Started refreshing${isGlobal ? ' globally ' : ' '}${
+        commands.length
+      } application (/) commands.`
     );
 
     const route = isGlobal
