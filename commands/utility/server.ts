@@ -1,10 +1,11 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { createCommand } from '../../types/DiscordCommand';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('server')
   .setDescription('Provides information about the server.');
 
-export const execute = async (interaction: ChatInputCommandInteraction) => {
+const execute = async (interaction: ChatInputCommandInteraction) => {
   if (!interaction.guild) {
     await interaction.reply('Could not get server information.');
     return;
@@ -15,3 +16,9 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
     `This server is ${interaction.guild.name} and has ${interaction.guild.memberCount} members.`
   );
 };
+
+export default createCommand({
+  cooldown: 5,
+  data,
+  execute,
+});

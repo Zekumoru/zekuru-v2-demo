@@ -3,12 +3,13 @@ import {
   GuildMember,
   SlashCommandBuilder,
 } from 'discord.js';
+import { createCommand } from '../../types/DiscordCommand';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('user')
   .setDescription('Provides information about the user.');
 
-export const execute = async (interaction: ChatInputCommandInteraction) => {
+const execute = async (interaction: ChatInputCommandInteraction) => {
   // interaction.user is the object representing the User who ran the command
   // interaction.member is the GuildMember object, which represents the user in the specific guild
   await interaction.reply(
@@ -17,3 +18,9 @@ export const execute = async (interaction: ChatInputCommandInteraction) => {
     }.`
   );
 };
+
+export default createCommand({
+  cooldown: 5,
+  data,
+  execute,
+});

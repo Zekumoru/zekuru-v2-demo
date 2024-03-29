@@ -1,9 +1,16 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { createCommand } from '../../types/DiscordCommand';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('shewi')
   .setDescription('Cute Shewi?');
 
-export const execute = async (interaction: ChatInputCommandInteraction) => {
+const execute = async (interaction: ChatInputCommandInteraction) => {
   await interaction.reply('Shewi is super kawaii! >~<');
 };
+
+export default createCommand({
+  cooldown: 5,
+  data,
+  execute,
+});
