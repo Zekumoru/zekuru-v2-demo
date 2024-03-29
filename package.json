@@ -6,7 +6,8 @@
   "author": "Zekumoru",
   "license": "MIT",
   "scripts": {
-    "dev": "nodemon --files"
+    "dev": "nodemon --files",
+    "deploy-commands": "ts-node --files .\\deploy-command.ts"
   },
   "dependencies": {
     "discord.js": "^14.14.1",

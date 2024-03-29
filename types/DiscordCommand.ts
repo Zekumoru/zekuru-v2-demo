@@ -2,7 +2,10 @@ import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 
 export interface DiscordCommand {
   cooldown?: number;
-  data: SlashCommandBuilder;
+  devOnly?: boolean;
+  data:
+    | SlashCommandBuilder
+    | Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
 }
 
