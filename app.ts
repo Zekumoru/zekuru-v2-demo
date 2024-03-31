@@ -15,7 +15,13 @@ const token = process.env.DISCORD_TOKEN;
  *  - Intents also define which events Discord should send to your bot, and you
  *    may wish to enable more than just the minimum.
  */
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
 
 client.commands = new Collection();
 client.cooldowns = new Collection();
