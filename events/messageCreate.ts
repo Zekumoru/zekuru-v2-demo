@@ -1,6 +1,7 @@
 import { Collection, EmbedBuilder, Events, Message } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
 import * as deepl from 'deepl-node';
+import tagTranscoder from '../utils/tagTranscoder';
 
 const devGuildId = process.env.GUILD_ID!;
 
@@ -78,13 +79,21 @@ export default {
         if (!targetLang) return;
 
         try {
-          const translatedContent = (
+          const [messageToTranslate, tagTable] = tagTranscoder.encode(
+            message.content
+          );
+
+          const translatedContentToDecode = (
             await translator.translateText(
-              message.content,
+              messageToTranslate,
               sourceLang,
               targetLang
             )
           ).text;
+          const translatedContent = tagTranscoder.decode(
+            translatedContentToDecode,
+            tagTable
+          );
 
           await channel.send({
             embeds: [createTranslateEmbed(message, translatedContent)],
