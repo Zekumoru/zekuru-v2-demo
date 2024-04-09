@@ -17,6 +17,7 @@ const channels = new Collection<string, TranslateChannel>();
 // Dev server
 channels.set('1224117874029760562', { sourceLang: 'en', targetLang: 'en-US' });
 channels.set('1224117938462785586', { sourceLang: 'ja', targetLang: 'ja' });
+channels.set('1226929504140918916', { sourceLang: 'it', targetLang: 'it' });
 
 // Yuzuki's Cove
 channels.set('988287662580436992', { sourceLang: 'en', targetLang: 'en-US' });
@@ -26,10 +27,17 @@ channels.set('1224121528371777567', { sourceLang: 'ja', targetLang: 'ja' });
 
 const channelMap = new Collection<string, string[]>();
 
-// link dev server en to jp
-channelMap.set('1224117874029760562', ['1224117938462785586']);
-// link dev server jp to en
-channelMap.set('1224117938462785586', ['1224117874029760562']);
+// link dev server
+[
+  '1224117874029760562',
+  '1224117938462785586',
+  '1226929504140918916',
+].forEach((channelId, _index, array) => {
+  const channels = array.filter(
+    (secondChannelId) => channelId !== secondChannelId
+  );
+  channelMap.set(channelId, channels);
+});
 
 // link Yuzuki's Cove
 [
