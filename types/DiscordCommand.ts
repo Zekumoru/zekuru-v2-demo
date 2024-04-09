@@ -1,4 +1,5 @@
 import {
+  AutocompleteInteraction,
   ChatInputCommandInteraction,
   SlashCommandBuilder,
   SlashCommandSubcommandsOnlyBuilder,
@@ -7,6 +8,7 @@ import {
 export interface DiscordCommand {
   cooldown?: number;
   devOnly?: boolean;
+  autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
   data:
     | SlashCommandBuilder
     | SlashCommandSubcommandsOnlyBuilder
