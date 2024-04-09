@@ -2,11 +2,9 @@ import { Collection, EmbedBuilder, Events, Message } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
 import * as deepl from 'deepl-node';
 import tagTranscoder from '../utils/tagTranscoder';
+import translator from '../translation/translator';
 
 const devGuildId = process.env.GUILD_ID!;
-
-const deeplApiKey = process.env.DEEPL_API_KEY;
-const translator = new deepl.Translator(deeplApiKey ?? '');
 
 interface TranslateChannel {
   sourceLang: deepl.SourceLanguageCode;
@@ -28,16 +26,14 @@ channels.set('1224121528371777567', { sourceLang: 'ja', targetLang: 'ja' });
 const channelMap = new Collection<string, string[]>();
 
 // link dev server
-[
-  '1224117874029760562',
-  '1224117938462785586',
-  '1226929504140918916',
-].forEach((channelId, _index, array) => {
-  const channels = array.filter(
-    (secondChannelId) => channelId !== secondChannelId
-  );
-  channelMap.set(channelId, channels);
-});
+['1224117874029760562', '1224117938462785586', '1226929504140918916'].forEach(
+  (channelId, _index, array) => {
+    const channels = array.filter(
+      (secondChannelId) => channelId !== secondChannelId
+    );
+    channelMap.set(channelId, channels);
+  }
+);
 
 // link Yuzuki's Cove
 [
