@@ -6,6 +6,7 @@ declare global {
       CLIENT_ID?: string;
       GUILD_ID?: string;
       DEEPL_API_KEY?: string;
+      MONGODB_CONNECTION_STRING?: string;
     }
   }
 }
