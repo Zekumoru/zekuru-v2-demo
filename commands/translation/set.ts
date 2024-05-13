@@ -10,18 +10,18 @@ import translateChannels from '../../cache/translateChannels';
 const data = new SlashCommandBuilder()
   .setName('set')
   .setDescription(`Set a channel's language.`)
-  .addChannelOption((option) =>
-    option
-      .setName('channel')
-      .setDescription('The channel to set the language of.')
-      .setRequired(false)
-  )
   .addStringOption((option) =>
     option
       .setName('language')
       .setDescription('The language to set.')
       .setAutocomplete(true)
       .setRequired(true)
+  )
+  .addChannelOption((option) =>
+    option
+      .setName('channel')
+      .setDescription('The channel to set the language of.')
+      .setRequired(false)
   );
 
 const autocomplete = async (interaction: AutocompleteInteraction) => {
