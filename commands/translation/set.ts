@@ -44,7 +44,6 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   if (!language) {
     await interaction.reply({
       content: `Please specify a language.`,
-      ephemeral: true,
     });
     return;
   }
@@ -55,7 +54,6 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   if (!sourceLang) {
     await interaction.reply({
       content: `Invalid language '${language}'.`,
-      ephemeral: true,
     });
     return;
   }
@@ -66,7 +64,6 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   if (!targetLang) {
     await interaction.reply({
       content: `Error! Target language is missing. Please contact the developer.`,
-      ephemeral: true,
     });
     return;
   }
@@ -75,7 +72,6 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
   await interaction.reply({
     content: `<#${channelId}> has been set to '${language}'.`,
-    ephemeral: true,
   });
 };
 

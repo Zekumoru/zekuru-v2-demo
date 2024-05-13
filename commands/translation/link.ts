@@ -24,7 +24,6 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   if (!firstChannel) {
     await interaction.reply({
       content: `Please specify the first channel.`,
-      ephemeral: true,
     });
     return;
   }
@@ -33,7 +32,6 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   if (!secondChannel) {
     await interaction.reply({
       content: `Please specify the second channel.`,
-      ephemeral: true,
     });
     return;
   }
@@ -58,7 +56,6 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   if (errorMessage || firstTrChannel == null || secondTrChannel == null) {
     await interaction.reply({
       content: errorMessage,
-      ephemeral: true,
     });
     return;
   }
@@ -88,7 +85,6 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
   await interaction.reply({
     content: `<#${firstChannel.id}> (${firstTrChannel.sourceLang}) and <#${secondChannel.id}> (${secondTrChannel.sourceLang}) are now linked!`,
-    ephemeral: true,
   });
 };
 
