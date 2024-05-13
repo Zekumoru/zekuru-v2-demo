@@ -28,7 +28,9 @@ const autocomplete = async (interaction: AutocompleteInteraction) => {
   const focusedValue = interaction.options.getFocused();
   const choices = sourceLanguages.map((lang) => lang.name);
   const filtered = choices
-    .filter((choice) => choice.startsWith(focusedValue))
+    .filter((choice) =>
+      choice.toLowerCase().startsWith(focusedValue.toLowerCase())
+    )
     .slice(0, 25);
 
   await interaction.respond(
