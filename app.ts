@@ -3,6 +3,7 @@ import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { DiscordEvent } from './types/DiscordEvent';
+import { appDebug } from './utils/logger';
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -43,7 +44,7 @@ for (const folder of commandFolders) {
     if ('data' in command && 'execute' in command) {
       client.commands.set(command.data.name, command);
     } else {
-      console.log(
+      appDebug(
         `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
       );
     }
