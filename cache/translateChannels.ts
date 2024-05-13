@@ -37,7 +37,7 @@ const set = async (
   channels.set(channelId, {
     _id: channel._id,
     id: channel.id,
-    targetLang: channel.sourceLang as TargetLanguageCode,
+    targetLang: channel.targetLang as TargetLanguageCode,
     sourceLang: channel.sourceLang as SourceLanguageCode,
     createdAt: channel.createdAt,
   });
@@ -56,7 +56,7 @@ const get = async (channelId: string) => {
   channels.set(channelId, {
     _id: channel._id,
     id: channel.id,
-    targetLang: channel.sourceLang as TargetLanguageCode,
+    targetLang: channel.targetLang as TargetLanguageCode,
     sourceLang: channel.sourceLang as SourceLanguageCode,
     createdAt: channel.createdAt,
   });
