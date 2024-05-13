@@ -1,52 +1,9 @@
-import { Collection, EmbedBuilder, Events, Message } from 'discord.js';
+import { EmbedBuilder, Events, Message } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
-import * as deepl from 'deepl-node';
 import tagTranscoder from '../utils/tagTranscoder';
 import translator from '../translation/translator';
-
-const devGuildId = process.env.GUILD_ID!;
-
-interface TranslateChannel {
-  sourceLang: deepl.SourceLanguageCode;
-  targetLang: deepl.TargetLanguageCode;
-}
-const channels = new Collection<string, TranslateChannel>();
-
-// Dev server
-channels.set('1224117874029760562', { sourceLang: 'en', targetLang: 'en-US' });
-channels.set('1224117938462785586', { sourceLang: 'ja', targetLang: 'ja' });
-channels.set('1226929504140918916', { sourceLang: 'it', targetLang: 'it' });
-
-// Yuzuki's Cove
-channels.set('988287662580436992', { sourceLang: 'en', targetLang: 'en-US' });
-channels.set('988287682142691338', { sourceLang: 'zh', targetLang: 'zh' });
-channels.set('988287699876200478', { sourceLang: 'ko', targetLang: 'ko' });
-channels.set('1224121528371777567', { sourceLang: 'ja', targetLang: 'ja' });
-
-const channelMap = new Collection<string, string[]>();
-
-// link dev server
-['1224117874029760562', '1224117938462785586', '1226929504140918916'].forEach(
-  (channelId, _index, array) => {
-    const channels = array.filter(
-      (secondChannelId) => channelId !== secondChannelId
-    );
-    channelMap.set(channelId, channels);
-  }
-);
-
-// link Yuzuki's Cove
-[
-  '988287662580436992',
-  '988287682142691338',
-  '988287699876200478',
-  '1224121528371777567',
-].forEach((channelId, _index, array) => {
-  const channels = array.filter(
-    (secondChannelId) => channelId !== secondChannelId
-  );
-  channelMap.set(channelId, channels);
-});
+import translateChannels from '../cache/translateChannels';
+import channelLinks from '../cache/channelLinks';
 
 const createTranslateEmbed = (message: Message, translatedContent: string) => {
   return new EmbedBuilder()
@@ -64,23 +21,21 @@ const createTranslateEmbed = (message: Message, translatedContent: string) => {
 export default {
   name: Events.MessageCreate,
   execute: async (message: Message) => {
-    // only process this event if in the dev guild
-    if (message.guildId !== devGuildId) return;
     // if it is a bot, ignore
     if (message.author.bot) return;
 
-    const sourceLang = channels.get(message.channelId)?.sourceLang;
-    const translateChannels = channelMap.get(message.channelId);
-    if (!sourceLang || !translateChannels) return;
+    const sourceTrChannel = await translateChannels.get(message.channelId);
+    const link = await channelLinks.get(message.channelId);
+    if (!sourceTrChannel || !link) return;
 
     await Promise.all(
-      translateChannels.map(async (channelId) => {
+      link.links.map(async ({ id: channelId }) => {
         const channel = message.client.channels.cache.get(channelId);
         if (!channel) return;
         if (!channel.isTextBased()) return;
 
-        const targetLang = channels.get(channel.id)?.targetLang;
-        if (!targetLang) return;
+        const targetTrChannel = await translateChannels.get(channel.id);
+        if (!targetTrChannel) return;
 
         try {
           const [messageToTranslate, tagTable] = tagTranscoder.encode(
@@ -90,8 +45,8 @@ export default {
           const translatedContentToDecode = (
             await translator.translateText(
               messageToTranslate,
-              sourceLang,
-              targetLang
+              sourceTrChannel.sourceLang,
+              targetTrChannel.targetLang
             )
           ).text;
           const translatedContent = tagTranscoder.decode(
