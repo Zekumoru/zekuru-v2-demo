@@ -1,9 +1,10 @@
 import 'dotenv/config';
-import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, GatewayIntentBits } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { DiscordEvent } from './types/DiscordEvent';
 import { appDebug } from './utils/logger';
+import './db/mongoDbConnect';
 
 const token = process.env.DISCORD_TOKEN;
 
