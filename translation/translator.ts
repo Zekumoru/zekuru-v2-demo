@@ -13,7 +13,8 @@ const loadTargetLanguages = async () => {
         !/\(.*\)/.test(lang.name) ||
         // push languages that are American and European
         lang.name.includes('American') ||
-        lang.name.includes('European')
+        lang.name.includes('European') ||
+        lang.name.includes('simplified')
     )
   );
 
