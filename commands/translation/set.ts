@@ -4,7 +4,8 @@ import {
   SlashCommandBuilder,
 } from 'discord.js';
 import { createCommand } from '../../types/DiscordCommand';
-import { sourceLanguages } from '../../translation/translator';
+import { sourceLanguages, targetLanguages } from '../../translation/translator';
+import translateChannels from '../../cache/translateChannels';
 
 const data = new SlashCommandBuilder()
   .setName('set')
@@ -13,7 +14,7 @@ const data = new SlashCommandBuilder()
     option
       .setName('channel')
       .setDescription('The channel to set the language of.')
-      .setRequired(true)
+      .setRequired(false)
   )
   .addStringOption((option) =>
     option
@@ -36,8 +37,44 @@ const autocomplete = async (interaction: AutocompleteInteraction) => {
 };
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
+  const channelId =
+    interaction.options.getChannel('channel')?.id ?? interaction.channelId;
+
+  const language = interaction.options.getString('language');
+  if (!language) {
+    await interaction.reply({
+      content: `Please specify a language.`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const sourceLang = sourceLanguages.find((lang) =>
+    lang.name.includes(language)
+  )?.code;
+  if (!sourceLang) {
+    await interaction.reply({
+      content: `Invalid language '${language}'.`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const targetLang = targetLanguages.find((lang) =>
+    lang.name.includes(language)
+  )?.code;
+  if (!targetLang) {
+    await interaction.reply({
+      content: `Error! Target language is missing. Please contact the developer.`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  await translateChannels.set(channelId, sourceLang, targetLang);
+
   await interaction.reply({
-    content: 'In development',
+    content: `<#${channelId}> has been set to '${language}'.`,
     ephemeral: true,
   });
 };
