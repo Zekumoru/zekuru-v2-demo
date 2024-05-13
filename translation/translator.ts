@@ -6,7 +6,17 @@ const translator = new deepl.Translator(deeplApiKey ?? '');
 
 export const targetLanguages: deepl.Language[] = [];
 const loadTargetLanguages = async () => {
-  targetLanguages.push(...(await translator.getTargetLanguages()));
+  targetLanguages.push(
+    ...(await translator.getTargetLanguages()).filter(
+      (lang) =>
+        // push languages without parenthesis like English (American)
+        !/\(.*\)/.test(lang.name) ||
+        // push languages that are American and European
+        lang.name.includes('American') ||
+        lang.name.includes('European')
+    )
+  );
+
   appDebug('Target languages loaded.');
 };
 
