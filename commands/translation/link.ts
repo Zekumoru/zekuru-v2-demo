@@ -1,4 +1,8 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import {
+  ChatInputCommandInteraction,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+} from 'discord.js';
 import { createCommand } from '../../types/DiscordCommand';
 import translateChannels from '../../cache/translateChannels';
 import channelLinks from '../../cache/channelLinks';
@@ -17,7 +21,8 @@ const data = new SlashCommandBuilder()
       .setName('second-channel')
       .setDescription('The second of the two channels to link.')
       .setRequired(true)
-  );
+  )
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
   const firstChannel = interaction.options.getChannel('first-channel');

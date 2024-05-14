@@ -1,6 +1,7 @@
 import {
   AutocompleteInteraction,
   ChatInputCommandInteraction,
+  PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
 import { createCommand } from '../../types/DiscordCommand';
@@ -22,7 +23,8 @@ const data = new SlashCommandBuilder()
       .setName('channel')
       .setDescription('The channel to set the language of.')
       .setRequired(false)
-  );
+  )
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
 const autocomplete = async (interaction: AutocompleteInteraction) => {
   const focusedValue = interaction.options.getFocused();

@@ -1,4 +1,8 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import {
+  ChatInputCommandInteraction,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+} from 'discord.js';
 import { createCommand } from '../../types/DiscordCommand';
 
 const data = new SlashCommandBuilder()
@@ -9,7 +13,8 @@ const data = new SlashCommandBuilder()
       .setName('command')
       .setDescription('The command to reload.')
       .setRequired(true)
-  );
+  )
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
   const commandName = interaction.options
