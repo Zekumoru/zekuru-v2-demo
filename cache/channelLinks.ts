@@ -38,7 +38,7 @@ const update = async (channelLink: IChannelLink) => {
   await link.save();
 
   // update cache
-  cacheLinks.set(channelLink.id, channelLink);
+  cacheLinks.set(channelLink.id, await getLink(channelLink.id));
 };
 
 const get = async (channelId: string) => {
