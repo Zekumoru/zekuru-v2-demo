@@ -30,7 +30,12 @@ const set = async (
 ) => {
   // update in db
   const channel = await getChannel(channelId, sourceLang, targetLang);
-  channel.overwrite({ id: channelId, sourceLang, targetLang });
+  channel.overwrite({
+    id: channelId,
+    sourceLang,
+    targetLang,
+    createdAt: channel.createdAt,
+  });
   await channel.save();
 
   // update cache
