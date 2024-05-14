@@ -5,6 +5,8 @@ import translator from '../translation/translator';
 import translateChannels from '../cache/translateChannels';
 import channelLinks from '../cache/channelLinks';
 import webhookCache from '../cache/webhookCache';
+import { SourceLanguageCode, TargetLanguageCode } from 'deepl-node';
+import { errorDebug } from '../utils/logger';
 
 const createTranslateEmbed = (message: Message, translatedContent: string) => {
   return new EmbedBuilder()
@@ -17,6 +19,27 @@ const createTranslateEmbed = (message: Message, translatedContent: string) => {
     })
     .setDescription(translatedContent)
     .setTimestamp();
+};
+
+const translate = async (
+  content: string,
+  sourceLang: SourceLanguageCode,
+  targetLang: TargetLanguageCode
+) => {
+  if (content.trim() === '') return;
+
+  const [messageToTranslate, tagTable] = tagTranscoder.encode(content);
+
+  const translatedContentToDecode = (
+    await translator.translateText(messageToTranslate, sourceLang, targetLang)
+  ).text;
+
+  const translatedContent = tagTranscoder.decode(
+    translatedContentToDecode,
+    tagTable
+  );
+
+  return translatedContent;
 };
 
 export default {
@@ -41,20 +64,14 @@ export default {
         if (!targetTrChannel) return;
 
         try {
-          const [messageToTranslate, tagTable] = tagTranscoder.encode(
-            message.content
+          const translatedContent = await translate(
+            message.content,
+            sourceTrChannel.sourceLang,
+            targetTrChannel.targetLang
           );
 
-          const translatedContentToDecode = (
-            await translator.translateText(
-              messageToTranslate,
-              sourceTrChannel.sourceLang,
-              targetTrChannel.targetLang
-            )
-          ).text;
-          const translatedContent = tagTranscoder.decode(
-            translatedContentToDecode,
-            tagTable
+          const attachments = message.attachments.map(
+            (attachment) => attachment
           );
 
           await webhook.send({
@@ -64,9 +81,10 @@ export default {
               message.author.avatarURL() ??
               undefined,
             content: translatedContent,
+            files: attachments,
           });
         } catch (error) {
-          console.error(error);
+          errorDebug(error);
         }
       })
     );
