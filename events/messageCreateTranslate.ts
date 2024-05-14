@@ -1,4 +1,10 @@
-import { ChannelType, EmbedBuilder, Events, Message } from 'discord.js';
+import {
+  ChannelType,
+  EmbedBuilder,
+  Events,
+  Message,
+  StickerFormatType,
+} from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
 import tagTranscoder from '../utils/tagTranscoder';
 import translator from '../translation/translator';
@@ -63,7 +69,25 @@ export default {
         const targetTrChannel = await translateChannels.get(channel.id);
         if (!targetTrChannel) return;
 
+        const username =
+          message.member?.displayName ?? message.author.displayName;
+        const avatarURL =
+          message.member?.avatarURL() ??
+          message.author.avatarURL() ??
+          undefined;
+
         try {
+          // handle sticker-only message
+          const sticker = message.stickers.map((sticker) => sticker)[0];
+          if (sticker) {
+            await webhook.send({
+              username,
+              avatarURL,
+              content: `https://media.discordapp.net/stickers/${sticker.id}.webp`,
+            });
+            return;
+          }
+
           const translatedContent = await translate(
             message.content,
             sourceTrChannel.sourceLang,
@@ -75,11 +99,8 @@ export default {
           );
 
           await webhook.send({
-            username: message.member?.displayName ?? message.author.displayName,
-            avatarURL:
-              message.member?.avatarURL() ??
-              message.author.avatarURL() ??
-              undefined,
+            username,
+            avatarURL,
             content: translatedContent,
             files: attachments,
           });
