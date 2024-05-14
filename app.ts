@@ -1,5 +1,11 @@
 import 'dotenv/config';
-import { Client, Collection, GatewayIntentBits } from 'discord.js';
+import {
+  Client,
+  Collection,
+  Events,
+  GatewayIntentBits,
+  Partials,
+} from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { DiscordEvent } from './types/DiscordEvent';
@@ -21,9 +27,11 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.GuildWebhooks,
+    GatewayIntentBits.MessageContent,
   ],
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
 client.commands = new Collection();
