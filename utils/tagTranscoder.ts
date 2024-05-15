@@ -23,7 +23,7 @@ const tagTranscoder: ITagTranscoder = {
       lastIndex = match.index + match[0].length;
 
       // push encoded
-      const key = `<:${counter}>`;
+      const key = `<:${counter}:>`;
       tokens.push(key);
       tagTable.set(key, match[0]);
       counter++;
