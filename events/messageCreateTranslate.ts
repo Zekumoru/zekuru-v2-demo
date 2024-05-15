@@ -3,7 +3,7 @@ import {
   EmbedBuilder,
   Events,
   Message,
-  StickerFormatType,
+  TextChannel,
 } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
 import tagTranscoder from '../utils/tagTranscoder';
@@ -14,20 +14,10 @@ import webhookCache from '../cache/webhookCache';
 import { SourceLanguageCode, TargetLanguageCode } from 'deepl-node';
 import { errorDebug } from '../utils/logger';
 import { ITranslateChannel } from '../models/TranslateChannel';
-import MessageLink, { IMessageLinkItem } from '../models/MessageLink';
-
-const createTranslateEmbed = (message: Message, translatedContent: string) => {
-  return new EmbedBuilder()
-    .setColor(0x0099ff)
-    .setAuthor({
-      name: message.member?.nickname ?? message.author.displayName,
-      iconURL:
-        message.member?.avatarURL({ size: 32 }) ??
-        message.author.displayAvatarURL({ size: 32 }),
-    })
-    .setDescription(translatedContent)
-    .setTimestamp();
-};
+import MessageLink, {
+  IMessageLink,
+  IMessageLinkItem,
+} from '../models/MessageLink';
 
 const translate = async (
   content: string,
@@ -50,6 +40,66 @@ const translate = async (
   return translatedContent;
 };
 
+const buildReplyEmbed = async (message: Message, replyChannel: TextChannel) => {
+  if (!message.reference) return;
+
+  const channel = message.client.channels.cache.get(message.channelId);
+  if (!channel) return;
+  if (channel.type !== ChannelType.GuildText) return;
+
+  const replyOriginalMessage = await message.fetchReference();
+  if (!replyOriginalMessage) return;
+
+  // get the reply message's links
+  const messageLink = await MessageLink.findOne<IMessageLink>({
+    links: {
+      $elemMatch: {
+        messageId: replyOriginalMessage.id,
+        channelId: message.channelId,
+      },
+    },
+  });
+  if (!messageLink) return;
+
+  // get the actual link to the reply message's language
+  // meaning use this link for replying
+  const link = messageLink.links.find(
+    ({ channelId }) => channelId === replyChannel.id
+  );
+  if (!link) return;
+
+  const replyMessage = await replyChannel.messages.fetch(link.messageId);
+
+  // build content for the reply embed
+  let replyContentRaw = replyMessage.content;
+  if (replyContentRaw.length > 77)
+    replyContentRaw = `${replyContentRaw.slice(0, 77)}...`;
+  let replyContent = `**[Replying to:](${replyMessage.url})** ${replyContentRaw}`;
+
+  if (replyContentRaw === '') {
+    // check if replying to an attachment
+    if (replyMessage.attachments.size) {
+      replyContent = `**[Replying to an attachment](${replyMessage.url})** ${replyContentRaw}`;
+    } else if (replyMessage.stickers.size) {
+      replyContent = `**[Replying to a sticker](${replyMessage.url})**`;
+    } else {
+      // maybe will change in the future?
+      // idk what other attachments there are other than embeds
+      replyContent = `**[Replying to an attachment](${replyMessage.url})** ${replyContentRaw}`;
+    }
+  }
+
+  return new EmbedBuilder()
+    .setColor(0x0099ff)
+    .setAuthor({
+      name: message.member?.nickname ?? message.author.displayName,
+      iconURL:
+        message.member?.avatarURL({ size: 32 }) ??
+        message.author.displayAvatarURL({ size: 32 }),
+    })
+    .setDescription(replyContent);
+};
+
 const translateChannel = async (
   message: Message,
   channelId: string,
@@ -69,6 +119,9 @@ const translateChannel = async (
     message.member?.avatarURL() ?? message.author.avatarURL() ?? undefined;
 
   try {
+    // get reply embed
+    const replyEmbed = await buildReplyEmbed(message, channel);
+
     // handle sticker-only message
     const sticker = message.stickers.map((sticker) => sticker)[0];
     if (sticker) {
@@ -76,6 +129,7 @@ const translateChannel = async (
         username,
         avatarURL,
         content: `https://media.discordapp.net/stickers/${sticker.id}.webp`,
+        embeds: replyEmbed ? [replyEmbed] : undefined,
       });
     }
 
@@ -92,6 +146,7 @@ const translateChannel = async (
       avatarURL,
       content: translatedContent,
       files: attachments,
+      embeds: replyEmbed ? [replyEmbed] : undefined,
     });
   } catch (error) {
     errorDebug(error);
