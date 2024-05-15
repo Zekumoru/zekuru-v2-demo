@@ -92,10 +92,10 @@ const buildReplyEmbed = async (message: Message, replyChannel: TextChannel) => {
   return new EmbedBuilder()
     .setColor(0x0099ff)
     .setAuthor({
-      name: message.member?.nickname ?? message.author.displayName,
+      name: replyMessage.member?.nickname ?? replyMessage.author.displayName,
       iconURL:
-        message.member?.avatarURL({ size: 32 }) ??
-        message.author.displayAvatarURL({ size: 32 }),
+        replyMessage.member?.avatarURL({ size: 32 }) ??
+        replyMessage.author.displayAvatarURL({ size: 32 }),
     })
     .setDescription(replyContent);
 };
