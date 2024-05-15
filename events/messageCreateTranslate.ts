@@ -101,8 +101,11 @@ const translateChannel = async (
 export default {
   name: Events.MessageCreate,
   execute: async (message: Message) => {
-    // if it is a bot, ignore
-    if (message.author.bot) return;
+    // ignore this bot's webhooks messages
+    if (message.author.id !== message.client.user.id && message.webhookId) {
+      const webhook = await message.fetchWebhook();
+      if (webhook.owner?.id === message.client.user.id) return;
+    }
 
     const sourceTrChannel = await translateChannels.get(message.channelId);
     const link = await channelLinks.get(message.channelId);
