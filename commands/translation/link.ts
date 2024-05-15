@@ -6,10 +6,18 @@ import {
 import { createCommand } from '../../types/DiscordCommand';
 import translateChannels from '../../cache/translateChannels';
 import channelLinks from '../../cache/channelLinks';
+import { IChannelLink } from '../../models/ChannelLink';
+import { ITranslateChannel } from '../../models/TranslateChannel';
 
 const LinkOptions = {
   SOURCE_CHANNEL: 'source-channel',
   TARGET_CHANNEL: 'target-channel',
+  MODE: 'mode',
+  mode: {
+    UNIDIRECTIONAL: 'unidirectional',
+    BIDIRECTIONAL: 'bidirectional',
+    RECURSIVE: 'recursive',
+  },
 };
 
 const data = new SlashCommandBuilder()
@@ -28,7 +36,39 @@ const data = new SlashCommandBuilder()
         'The source channel to link. If not provided, takes the current channel as the source.'
       )
   )
+  .addStringOption((option) =>
+    option
+      .setName(LinkOptions.MODE)
+      .setDescription('Specify linking mode.')
+      .addChoices(
+        {
+          name: LinkOptions.mode.UNIDIRECTIONAL,
+          value: LinkOptions.mode.UNIDIRECTIONAL,
+        },
+        {
+          name: LinkOptions.mode.BIDIRECTIONAL,
+          value: LinkOptions.mode.BIDIRECTIONAL,
+        },
+        {
+          name: LinkOptions.mode.RECURSIVE,
+          value: LinkOptions.mode.RECURSIVE,
+        }
+      )
+  )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+
+const linkChannel = async (
+  channelLink: IChannelLink,
+  channelId: string,
+  translateChannel: ITranslateChannel
+) => {
+  if (channelLink.links.find((link) => link.id === channelId) === undefined) {
+    channelLink.links.push(translateChannel);
+    await channelLinks.update(channelLink);
+    return true;
+  }
+  return false;
+};
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
   const sourceChannelId =
@@ -45,6 +85,10 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     return;
   }
 
+  const mode =
+    interaction.options.getString(LinkOptions.MODE) ??
+    LinkOptions.mode.BIDIRECTIONAL;
+
   // check if these channels have languages associated with them
   const [sourceTrChannel, targetTrChannel] = await Promise.all([
     translateChannels.get(sourceChannelId),
@@ -57,9 +101,9 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   } else if (sourceTrChannel == null && targetTrChannel == null) {
     errorMessage = `Both <#${sourceChannelId}> and <#${targetChannelId}> are not associated with any languages yet. Please use the \`/set\` command to set their languages.`;
   } else if (sourceTrChannel == null) {
-    errorMessage = `<#${sourceChannelId}> it not associated with any languages yet. Please use the \`/set\` command to set its language.`;
+    errorMessage = `<#${sourceChannelId}> is not associated with any languages yet. Please use the \`/set\` command to set its language.`;
   } else if (targetTrChannel == null) {
-    errorMessage = `<#${targetChannelId}> it not associated with any languages yet. Please use the \`/set\` command to set its language.`;
+    errorMessage = `<#${targetChannelId}> is not associated with any languages yet. Please use the \`/set\` command to set its language.`;
   }
 
   if (errorMessage || sourceTrChannel == null || targetTrChannel == null) {
@@ -77,23 +121,35 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     (await channelLinks.get(targetChannelId)) ??
     (await channelLinks.create(targetChannelId));
 
-  // see if already added, otherwise add
-  if (
-    sourceChLink.links.find((link) => link.id === targetChannelId) === undefined
-  ) {
-    sourceChLink.links.push(targetTrChannel);
-    channelLinks.update(sourceChLink);
+  let linked = false;
+
+  // link unidirectional
+  linked = await linkChannel(sourceChLink, targetChannelId, targetTrChannel);
+  if (mode === LinkOptions.mode.UNIDIRECTIONAL) {
+    await interaction.reply({
+      content: linked
+        ? `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** is now linked **unidirectionally** to <#${targetChannelId}> **(${targetTrChannel.sourceLang})**!`
+        : `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** is already linked with <#${targetChannelId}> **(${targetTrChannel.sourceLang})**!`,
+    });
+    return;
   }
 
-  if (
-    targetChLink.links.find((link) => link.id === sourceChannelId) === undefined
-  ) {
-    targetChLink.links.push(sourceTrChannel);
-    channelLinks.update(targetChLink);
+  // link bidirectional
+  linked ||= await linkChannel(targetChLink, sourceChannelId, sourceTrChannel);
+  if (mode === LinkOptions.mode.BIDIRECTIONAL) {
+    await interaction.reply({
+      content: linked
+        ? `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are now linked!`
+        : `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are already linked!`,
+    });
+    return;
   }
 
+  // link recursive (to do)
   await interaction.reply({
-    content: `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are now linked!`,
+    content: linked
+      ? `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are now linked!`
+      : `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are already linked!`,
   });
 };
 
