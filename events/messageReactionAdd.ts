@@ -1,5 +1,7 @@
 import {
+  ChannelType,
   Events,
+  Message,
   MessageReaction,
   PartialMessageReaction,
   PartialUser,
@@ -7,6 +9,49 @@ import {
 } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
 import { errorDebug } from '../utils/logger';
+import MessageLink, { IMessageLink } from '../models/MessageLink';
+import channelLinks from '../cache/channelLinks';
+
+export const getMessagesLink = async (
+  reaction: MessageReaction | PartialMessageReaction
+) => {
+  // ignore if it is the bot
+  if (reaction.me) return [];
+  // ignore channels that aren't set with any language
+  if (!(await channelLinks.get(reaction.message.channelId))) return [];
+
+  if (reaction.partial) {
+    try {
+      await reaction.fetch();
+    } catch (error) {
+      errorDebug('Something went wrong when fetching the message: ', error);
+      return [];
+    }
+  }
+
+  const message = reaction.message;
+  if (!message.guild) return [];
+
+  // Get message link from db
+  const messageLink = await MessageLink.findOne<IMessageLink>({
+    links: { $elemMatch: { messageId: message.id } },
+  });
+  if (!messageLink) return [];
+
+  const messages = (await Promise.all(
+    messageLink.links.map(async (link) => {
+      // ignore the message that the user has reacted to
+      if (link.messageId === message.id) return;
+
+      const channel = message.guild!.channels.cache.get(link.channelId);
+      if (!channel) return;
+      if (channel.type !== ChannelType.GuildText) return;
+      return await channel.messages.fetch(link.messageId);
+    })
+  )) as unknown as (Message<true> | undefined)[] | undefined;
+
+  return [messages, messageLink] as const;
+};
 
 export default {
   name: Events.MessageReactionAdd,
@@ -14,20 +59,24 @@ export default {
     reaction: MessageReaction | PartialMessageReaction,
     user: User | PartialUser
   ) => {
-    if (reaction.partial) {
-      try {
-        await reaction.fetch();
-      } catch (error) {
-        errorDebug('Something went wrong when fetching the message: ', error);
-        return;
-      }
-    }
+    const [messages] = await getMessagesLink(reaction);
+    if (!messages) return;
 
-    // Now the message has been cached and is fully available
-    console.log(
-      `${reaction.message.author}'s message "${reaction.message.content}" gained a reaction!`
+    // react with emoji
+    await Promise.all(
+      messages.map(async (message) => {
+        try {
+          // try to react with the emoji
+          await message?.react(reaction.emoji);
+        } catch (error) {
+          // the emoji isn't available for the bot
+          const { id, name } = reaction.emoji;
+          // NOTE: Since this is pretty annoying, just ignore emojis of other servers
+          // await message.reply({
+          //   content: `<@${user.id}> has reacted with <:${name}:${id}>`,
+          // });
+        }
+      })
     );
-    // The reaction is now also fully available and the properties will be reflected accurately:
-    console.log(`${user.username} has given the reaction to this message!`);
   },
 } as DiscordEvent;
