@@ -5,7 +5,8 @@ interface ITagTranscoder {
   decode: (message: string, tagTable: TTagTable) => string;
 }
 
-const DISCORD_TAG_REGEX = /<[:@][\d:]*>/g;
+const DISCORD_TAG_REGEX =
+  /(<a?[:@][\w:]*>)|(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&\/=]*))/g;
 
 const tagTranscoder: ITagTranscoder = {
   encode: (message) => {
