@@ -7,58 +7,62 @@ import { createCommand } from '../../types/DiscordCommand';
 import translateChannels from '../../cache/translateChannels';
 import channelLinks from '../../cache/channelLinks';
 
+const LinkOptions = {
+  SOURCE_CHANNEL: 'source-channel',
+  TARGET_CHANNEL: 'target-channel',
+};
+
 const data = new SlashCommandBuilder()
   .setName('link')
   .setDescription('Links two translation channels.')
   .addChannelOption((option) =>
     option
-      .setName('first-channel')
-      .setDescription('The first of the two channels to link.')
+      .setName(LinkOptions.TARGET_CHANNEL)
+      .setDescription('The target channel to link.')
       .setRequired(true)
   )
   .addChannelOption((option) =>
     option
-      .setName('second-channel')
-      .setDescription('The second of the two channels to link.')
-      .setRequired(true)
+      .setName(LinkOptions.SOURCE_CHANNEL)
+      .setDescription(
+        'The source channel to link. If not provided, takes the current channel as the source.'
+      )
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
-  const firstChannel = interaction.options.getChannel('first-channel');
-  if (!firstChannel) {
-    await interaction.reply({
-      content: `Please specify the first channel.`,
-    });
-    return;
-  }
+  const sourceChannelId =
+    interaction.options.getChannel(LinkOptions.SOURCE_CHANNEL)?.id ??
+    interaction.channelId;
 
-  const secondChannel = interaction.options.getChannel('second-channel');
-  if (!secondChannel) {
+  const targetChannelId = interaction.options.getChannel(
+    LinkOptions.TARGET_CHANNEL
+  )?.id;
+  if (!targetChannelId) {
     await interaction.reply({
-      content: `Please specify the second channel.`,
+      content: `Please specify the target channel.`,
     });
     return;
   }
 
   // check if these channels have languages associated with them
-  const [firstTrChannel, secondTrChannel] = await Promise.all([
-    translateChannels.get(firstChannel.id),
-    translateChannels.get(secondChannel.id),
+  const [sourceTrChannel, targetTrChannel] = await Promise.all([
+    translateChannels.get(sourceChannelId),
+    translateChannels.get(targetChannelId),
   ]);
 
   let errorMessage = '';
-  if (firstChannel.id === secondChannel.id) {
-    errorMessage = `You cannot link <#${firstChannel.id}> with itself!`;
-  } else if (firstTrChannel == null && secondTrChannel == null) {
-    errorMessage = `Both <#${firstChannel.id}> and <#${secondChannel.id}> are not associated with any languages yet. Please use the \`/set\` command to set their languages.`;
-  } else if (firstTrChannel == null) {
-    errorMessage = `<#${firstChannel.id}> it not associated with any languages yet. Please use the \`/set\` command to set its language.`;
-  } else if (secondTrChannel == null) {
-    errorMessage = `<#${secondChannel.id}> it not associated with any languages yet. Please use the \`/set\` command to set its language.`;
+  if (sourceChannelId === targetChannelId) {
+    errorMessage = `You cannot link <#${sourceChannelId}> with itself!`;
+  } else if (sourceTrChannel == null && targetTrChannel == null) {
+    errorMessage = `Both <#${sourceChannelId}> and <#${targetChannelId}> are not associated with any languages yet. Please use the \`/set\` command to set their languages.`;
+  } else if (sourceTrChannel == null) {
+    errorMessage = `<#${sourceChannelId}> it not associated with any languages yet. Please use the \`/set\` command to set its language.`;
+  } else if (targetTrChannel == null) {
+    errorMessage = `<#${targetChannelId}> it not associated with any languages yet. Please use the \`/set\` command to set its language.`;
   }
 
-  if (errorMessage || firstTrChannel == null || secondTrChannel == null) {
+  if (errorMessage || sourceTrChannel == null || targetTrChannel == null) {
     await interaction.reply({
       content: errorMessage,
     });
@@ -66,30 +70,30 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // add to their respective link documents
-  const firstLink =
-    (await channelLinks.get(firstChannel.id)) ??
-    (await channelLinks.create(firstChannel.id));
-  const secondLink =
-    (await channelLinks.get(secondChannel.id)) ??
-    (await channelLinks.create(secondChannel.id));
+  const sourceChLink =
+    (await channelLinks.get(sourceChannelId)) ??
+    (await channelLinks.create(sourceChannelId));
+  const targetChLink =
+    (await channelLinks.get(targetChannelId)) ??
+    (await channelLinks.create(targetChannelId));
 
   // see if already added, otherwise add
   if (
-    firstLink.links.find((link) => link.id === secondChannel.id) === undefined
+    sourceChLink.links.find((link) => link.id === targetChannelId) === undefined
   ) {
-    firstLink.links.push(secondTrChannel);
-    channelLinks.update(firstLink);
+    sourceChLink.links.push(targetTrChannel);
+    channelLinks.update(sourceChLink);
   }
 
   if (
-    secondLink.links.find((link) => link.id === firstChannel.id) === undefined
+    targetChLink.links.find((link) => link.id === sourceChannelId) === undefined
   ) {
-    secondLink.links.push(firstTrChannel);
-    channelLinks.update(secondLink);
+    targetChLink.links.push(sourceTrChannel);
+    channelLinks.update(targetChLink);
   }
 
   await interaction.reply({
-    content: `<#${firstChannel.id}> (${firstTrChannel.sourceLang}) and <#${secondChannel.id}> (${secondTrChannel.sourceLang}) are now linked!`,
+    content: `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are now linked!`,
   });
 };
 
