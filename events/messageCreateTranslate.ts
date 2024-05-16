@@ -89,15 +89,36 @@ const buildReplyEmbed = async (message: Message, replyChannel: TextChannel) => {
     }
   }
 
-  return new EmbedBuilder()
-    .setColor(0x0099ff)
-    .setAuthor({
-      name: replyMessage.member?.nickname ?? replyMessage.author.displayName,
-      iconURL:
-        replyMessage.member?.avatarURL({ size: 32 }) ??
-        replyMessage.author.displayAvatarURL({ size: 32 }),
-    })
-    .setDescription(replyContent);
+  return {
+    embed: new EmbedBuilder()
+      .setColor(0x0099ff)
+      .setAuthor({
+        name: replyMessage.member?.nickname ?? replyMessage.author.displayName,
+        iconURL:
+          replyMessage.member?.avatarURL({ size: 32 }) ??
+          replyMessage.author.displayAvatarURL({ size: 32 }),
+      })
+      .setDescription(replyContent),
+    message: replyMessage,
+  };
+};
+
+const addReplyPing = (
+  content?: string,
+  authorId?: string
+): string | undefined => {
+  // if there's no author id (meaning it's a bot) then don't ping
+  if (!authorId) return content;
+
+  // if content is empty
+  if (!content) return `<@${authorId}>`;
+
+  // do not add reply ping if there's already a ping on the user
+  // INFO: pinging a user will ping the user on all channels, this is intended
+  // therefore it's up to people using the bot to tell people not to ping unnecessarily
+  if (content.includes(`<@${authorId}>`)) return content;
+
+  return `${content} <@${authorId}>`;
 };
 
 const translateChannel = async (
@@ -120,7 +141,10 @@ const translateChannel = async (
 
   try {
     // get reply embed
-    const replyEmbed = await buildReplyEmbed(message, channel);
+    const reply = await buildReplyEmbed(message, channel);
+    const replyAuthorId = !reply?.message.author.bot
+      ? reply?.message.author.id
+      : undefined;
 
     // handle sticker-only message
     const sticker = message.stickers.map((sticker) => sticker)[0];
@@ -128,8 +152,11 @@ const translateChannel = async (
       return await webhook.send({
         username,
         avatarURL,
-        content: `https://media.discordapp.net/stickers/${sticker.id}.webp`,
-        embeds: replyEmbed ? [replyEmbed] : undefined,
+        content: addReplyPing(
+          `https://media.discordapp.net/stickers/${sticker.id}.webp`,
+          replyAuthorId
+        ),
+        embeds: reply ? [reply.embed] : undefined,
       });
     }
 
@@ -144,9 +171,9 @@ const translateChannel = async (
     return await webhook.send({
       username,
       avatarURL,
-      content: translatedContent,
+      content: addReplyPing(translatedContent, replyAuthorId),
       files: attachments,
-      embeds: replyEmbed ? [replyEmbed] : undefined,
+      embeds: reply ? [reply.embed] : undefined,
     });
   } catch (error) {
     errorDebug(error);
