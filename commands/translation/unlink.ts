@@ -30,12 +30,23 @@ const data = new SlashCommandBuilder()
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
-const unlinkChannel = async (channelLink: IChannelLink, channelId: string) => {
+export const unlinkChannel = async (
+  channelLink: IChannelLink,
+  channelId: string
+) => {
   if (channelLink.links.find((link) => link.id === channelId)) {
     channelLink.links = channelLink.links.filter(
       (trChannel) => trChannel.id !== channelId
     );
-    await channelLinks.update(channelLink);
+
+    if (channelLink.links.length === 0) {
+      // remove channelLink since it doesn't have any links anymore
+      // because it cannot be called "channelLink" with no links
+      await channelLinks.delete(channelLink.id);
+    } else {
+      await channelLinks.update(channelLink);
+    }
+
     return true;
   }
   return false;

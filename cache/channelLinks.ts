@@ -61,4 +61,15 @@ const get = async (channelId: string) => {
   return cacheLinks.get(channelId)!;
 };
 
-export default { create, update, get };
+const deleteLink = async (channelId: string) => {
+  // check if it exists first
+  if ((await get(channelId)) == null) return;
+
+  // delete from db
+  await ChannelLink.deleteOne({ id: channelId });
+
+  // remove from cache
+  cacheLinks.delete(channelId);
+};
+
+export default { create, update, get, delete: deleteLink };
