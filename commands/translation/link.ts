@@ -39,7 +39,7 @@ const data = new SlashCommandBuilder()
   .addStringOption((option) =>
     option
       .setName(LinkOptions.MODE)
-      .setDescription('Specify linking mode.')
+      .setDescription('Specify linking mode. Default is bidirectional.')
       .addChoices(
         {
           name: LinkOptions.mode.UNIDIRECTIONAL,
