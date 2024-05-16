@@ -140,7 +140,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // link bidirectional
-  linked &&= await linkChannel(targetChLink, sourceChannelId, sourceTrChannel);
+  linked ||= await linkChannel(targetChLink, sourceChannelId, sourceTrChannel);
   if (mode === LinkOptions.mode.BIDIRECTIONAL) {
     await interaction.reply({
       content: linked
@@ -207,7 +207,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
                   linkChannel(sourceChLink, targetChLink.id, targetTrChannel),
                   linkChannel(targetChLink, sourceChLink.id, sourceTrChannel),
                 ])
-              ).reduce((v1, v2) => v1 && v2);
+              ).reduce((v1, v2) => v1 || v2);
             })()
           );
         }
