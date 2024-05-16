@@ -68,4 +68,15 @@ const get = async (channelId: string) => {
   return channels.get(channelId)!;
 };
 
-export default { set, get };
+const unset = async (channelId: string) => {
+  // check if it exists first
+  if ((await get(channelId)) == null) return;
+
+  // delete from db
+  await TranslateChannel.deleteOne({ id: channelId });
+
+  // remove from cache
+  channels.delete(channelId);
+};
+
+export default { set, unset, get };
