@@ -2,7 +2,14 @@ import * as deepl from 'deepl-node';
 import { appDebug } from '../utils/logger';
 
 const deeplApiKey = process.env.DEEPL_API_KEY;
-const translator = new deepl.Translator(deeplApiKey ?? '');
+const translator = new deepl.Translator(deeplApiKey ?? '', {
+  appInfo: {
+    appName: 'Guide Bot (Zekuru-v2 Demo)',
+    appVersion: '0.0.0',
+  },
+  minTimeout: 1000, // 1 second
+  maxRetries: 5,
+});
 
 export const targetLanguages: deepl.Language[] = [];
 const loadTargetLanguages = async () => {
