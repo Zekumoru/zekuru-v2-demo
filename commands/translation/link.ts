@@ -57,6 +57,13 @@ const data = new SlashCommandBuilder()
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
+const getChLink = async (channelId: string) => {
+  return (
+    (await channelLinks.get(channelId)) ??
+    (await channelLinks.create(channelId))
+  );
+};
+
 const linkChannel = async (
   channelLink: IChannelLink,
   channelId: string,
@@ -114,12 +121,10 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // add to their respective link documents
-  const sourceChLink =
-    (await channelLinks.get(sourceChannelId)) ??
-    (await channelLinks.create(sourceChannelId));
-  const targetChLink =
-    (await channelLinks.get(targetChannelId)) ??
-    (await channelLinks.create(targetChannelId));
+  const [sourceChLink, targetChLink] = await Promise.all([
+    getChLink(sourceChannelId),
+    getChLink(targetChannelId),
+  ]);
 
   let linked = false;
 
@@ -135,7 +140,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // link bidirectional
-  linked ||= await linkChannel(targetChLink, sourceChannelId, sourceTrChannel);
+  linked &&= await linkChannel(targetChLink, sourceChannelId, sourceTrChannel);
   if (mode === LinkOptions.mode.BIDIRECTIONAL) {
     await interaction.reply({
       content: linked
@@ -145,11 +150,77 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     return;
   }
 
-  // link recursive (to do)
+  // link recursive
+  const jobQueue = [sourceChLink, targetChLink];
+  const toProcessMap = new Map<
+    string,
+    {
+      chLink: IChannelLink;
+      trChannel: ITranslateChannel;
+    }
+  >();
+
+  // already add these to map to save time
+  toProcessMap.set(sourceChLink.id, {
+    chLink: sourceChLink,
+    trChannel: sourceTrChannel,
+  });
+  toProcessMap.set(targetChLink.id, {
+    chLink: targetChLink,
+    trChannel: targetTrChannel,
+  });
+
+  // build map containing all channels
+  while (jobQueue.length) {
+    const chLink = jobQueue.shift()!;
+
+    for (const link of chLink.links) {
+      if (toProcessMap.get(link.id)) continue;
+
+      const [linkTrChannel, linkChLink] = await Promise.all([
+        translateChannels.get(link.id),
+        getChLink(link.id),
+      ]);
+      jobQueue.push(linkChLink);
+
+      if (!linkTrChannel) continue;
+
+      toProcessMap.set(linkChLink.id, {
+        chLink: linkChLink,
+        trChannel: linkTrChannel,
+      });
+    }
+  }
+
+  // start linking recursively O(n^2) [actually O(n^3) because of linkChannel()]
+  const promises: Promise<void>[] = [];
+
+  toProcessMap.forEach(
+    ({ chLink: sourceChLink, trChannel: sourceTrChannel }) => {
+      toProcessMap.forEach(
+        ({ chLink: targetChLink, trChannel: targetTrChannel }) => {
+          if (sourceChLink === targetChLink) return;
+          promises.push(
+            (async () => {
+              linked ||= (
+                await Promise.all([
+                  linkChannel(sourceChLink, targetChLink.id, targetTrChannel),
+                  linkChannel(targetChLink, sourceChLink.id, sourceTrChannel),
+                ])
+              ).reduce((v1, v2) => v1 && v2);
+            })()
+          );
+        }
+      );
+    }
+  );
+
+  await Promise.all(promises);
+
   await interaction.reply({
     content: linked
-      ? `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are now linked!`
-      : `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are already linked!`,
+      ? `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are now linked **recursively**!`
+      : `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are already linked **recursively**!`,
   });
 };
 
