@@ -1,5 +1,8 @@
 import {
+  ActionRowBuilder,
   AutocompleteInteraction,
+  ButtonBuilder,
+  ButtonStyle,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
   SlashCommandBuilder,
@@ -7,6 +10,7 @@ import {
 import { createCommand } from '../../types/DiscordCommand';
 import { sourceLanguages, targetLanguages } from '../../translation/languages';
 import translateChannels from '../../cache/translateChannels';
+import { updateTranslateMessages } from '../../events/messageUpdateTranslate';
 
 const data = new SlashCommandBuilder()
   .setName('set')
@@ -72,10 +76,80 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     return;
   }
 
-  await translateChannels.set(channelId, sourceLang, targetLang);
+  const trChannel = await translateChannels.get(channelId);
 
+  if (trChannel) {
+    const oldLanguage =
+      sourceLanguages.find((lang) => lang.code === trChannel.sourceLang)
+        ?.name ?? trChannel.sourceLang;
+
+    // if already set with the given language
+    if (oldLanguage === language) {
+      await interaction.reply({
+        content: `<#${channelId}> is already set to \`${language}\`!`,
+      });
+      return;
+    }
+
+    // start asking if change the channel's language
+    const confirm = new ButtonBuilder()
+      .setCustomId('confirm')
+      .setLabel('Yes, change')
+      .setStyle(ButtonStyle.Danger);
+
+    const cancel = new ButtonBuilder()
+      .setCustomId('cancel')
+      .setLabel('Cancel')
+      .setStyle(ButtonStyle.Secondary);
+
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      cancel,
+      confirm
+    );
+
+    const response = await interaction.reply({
+      content: `<#${channelId}> is already set to \`${oldLanguage}\`. Do you want to change it to \`${language}\`?`,
+      components: [row],
+    });
+
+    try {
+      const confirmation = await response.awaitMessageComponent({
+        filter: (i) => i.user.id === interaction.user.id,
+        time: 30_000,
+      });
+
+      if (confirmation.customId === 'confirm') {
+        await translateChannels.set(channelId, sourceLang, targetLang);
+        await confirmation.update({
+          content: `<#${channelId}> has been changed to \`${language}\`.`,
+          components: [],
+        });
+      } else if (confirmation.customId === 'cancel') {
+        await confirmation.update({
+          content: `<#${channelId}>'s language not changed`,
+          components: [],
+        });
+      }
+
+      // reflect updated message to translation channels
+      await updateTranslateMessages(confirmation.message);
+    } catch (error) {
+      const message = await interaction.editReply({
+        content: `Confirmation not received within 30 seconds, cancelling.`,
+        components: [],
+      });
+
+      // reflect updated message to translation channels
+      await updateTranslateMessages(message);
+    }
+
+    return;
+  }
+
+  // set channel's language for the first time
+  await translateChannels.set(channelId, sourceLang, targetLang);
   await interaction.reply({
-    content: `<#${channelId}> has been set to '${language}'.`,
+    content: `<#${channelId}> has been set to \`${language}\`.`,
   });
 };
 
