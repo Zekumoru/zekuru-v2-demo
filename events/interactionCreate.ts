@@ -1,5 +1,6 @@
 import { CacheType, Collection, Events, Interaction } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
+import { errorDebug } from '../utils/logger';
 
 export default {
   name: Events.InteractionCreate,
@@ -46,7 +47,7 @@ export default {
     try {
       await command.execute(interaction);
     } catch (error) {
-      console.error(error);
+      errorDebug(error);
 
       const errorMessageContent = {
         content: 'There was an error while executing this command!',
