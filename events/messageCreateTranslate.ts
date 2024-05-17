@@ -3,6 +3,7 @@ import {
   EmbedBuilder,
   Events,
   Message,
+  StickerFormatType,
   TextChannel,
 } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
@@ -162,12 +163,26 @@ const translateChannel = async (
       });
     }
 
-    const translatedContent = await translateContent(
-      message.content,
-      message.guildId!,
-      sourceTrChannel.sourceLang,
-      targetTrChannel.targetLang
-    );
+    // check if content only contains a single emoji, convert to link
+    // emoji syntax: <a?:name:12345678901234567890>
+    const emojiTag = message.content.trim().match(/^<a?:.*:\d*>$/)?.[0];
+
+    let translatedContent: string | undefined;
+    if (emojiTag) {
+      const [animRaw, _name, idRaw] = emojiTag.split(':');
+      const ext = animRaw[1] === 'a' ? 'gif' : 'png';
+      translatedContent = `https://media.discordapp.net/emojis/${idRaw.slice(
+        0,
+        idRaw.length - 1
+      )}.${ext}`;
+    } else {
+      translatedContent = await translateContent(
+        message.content,
+        message.guildId!,
+        sourceTrChannel.sourceLang,
+        targetTrChannel.targetLang
+      );
+    }
 
     const attachments = message.attachments.map((attachment) => attachment);
 
