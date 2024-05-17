@@ -12,7 +12,7 @@ const translatorOptions: TranslatorOptions = {
     appVersion: '0.0.0',
   },
   minTimeout: 500, // 500 ms
-  maxRetries: 5,
+  maxRetries: 10,
 };
 
 const cacheTranslators = new Collection<string, Translator>();

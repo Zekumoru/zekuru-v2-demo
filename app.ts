@@ -32,6 +32,10 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
+  rest: {
+    timeout: 10 * 1000, // 10s
+    retries: 5,
+  },
 });
 
 client.commands = new Collection();
