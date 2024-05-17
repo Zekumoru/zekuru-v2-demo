@@ -57,14 +57,14 @@ const data = new SlashCommandBuilder()
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
-const getChLink = async (channelId: string) => {
+export const getChLink = async (channelId: string, guildId: string) => {
   return (
     (await channelLinks.get(channelId)) ??
-    (await channelLinks.create(channelId))
+    (await channelLinks.create(channelId, guildId))
   );
 };
 
-const linkChannel = async (
+export const linkChannel = async (
   channelLink: IChannelLink,
   channelId: string,
   translateChannel: ITranslateChannel
@@ -77,7 +77,50 @@ const linkChannel = async (
   return false;
 };
 
+export interface IChLinkProcessMapValue {
+  chLink: IChannelLink;
+  trChannel: ITranslateChannel;
+}
+
+export const linkChannels = async (
+  toProcessMap: Map<string, IChLinkProcessMapValue>
+) => {
+  let linked = false;
+  const promises: Promise<void>[] = [];
+
+  toProcessMap.forEach(
+    ({ chLink: sourceChLink, trChannel: sourceTrChannel }) => {
+      toProcessMap.forEach(
+        ({ chLink: targetChLink, trChannel: targetTrChannel }) => {
+          if (sourceChLink === targetChLink) return;
+
+          promises.push(
+            (async () => {
+              linked ||= (
+                await Promise.all([
+                  linkChannel(sourceChLink, targetChLink.id, targetTrChannel),
+                  linkChannel(targetChLink, sourceChLink.id, sourceTrChannel),
+                ])
+              ).reduce((v1, v2) => v1 || v2);
+            })()
+          );
+        }
+      );
+    }
+  );
+  await Promise.all(promises);
+
+  return linked;
+};
+
 const execute = async (interaction: ChatInputCommandInteraction) => {
+  if (!interaction.guildId) {
+    await interaction.reply({
+      content: `This command is only available on servers.`,
+    });
+    return;
+  }
+
   const sourceChannelId =
     interaction.options.getChannel(LinkOptions.SOURCE_CHANNEL)?.id ??
     interaction.channelId;
@@ -122,8 +165,8 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
   // add to their respective link documents
   const [sourceChLink, targetChLink] = await Promise.all([
-    getChLink(sourceChannelId),
-    getChLink(targetChannelId),
+    getChLink(sourceChannelId, interaction.guildId),
+    getChLink(targetChannelId, interaction.guildId),
   ]);
 
   let linked = false;
@@ -152,13 +195,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
   // link recursive
   const jobQueue = [sourceChLink, targetChLink];
-  const toProcessMap = new Map<
-    string,
-    {
-      chLink: IChannelLink;
-      trChannel: ITranslateChannel;
-    }
-  >();
+  const toProcessMap = new Map<string, IChLinkProcessMapValue>();
 
   // already add these to map to save time
   toProcessMap.set(sourceChLink.id, {
@@ -179,7 +216,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
       const [linkTrChannel, linkChLink] = await Promise.all([
         translateChannels.get(link.id),
-        getChLink(link.id),
+        getChLink(link.id, interaction.guildId),
       ]);
       jobQueue.push(linkChLink);
 
@@ -193,29 +230,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // start linking recursively O(n^2) [actually O(n^3) because of linkChannel()]
-  const promises: Promise<void>[] = [];
-
-  toProcessMap.forEach(
-    ({ chLink: sourceChLink, trChannel: sourceTrChannel }) => {
-      toProcessMap.forEach(
-        ({ chLink: targetChLink, trChannel: targetTrChannel }) => {
-          if (sourceChLink === targetChLink) return;
-          promises.push(
-            (async () => {
-              linked ||= (
-                await Promise.all([
-                  linkChannel(sourceChLink, targetChLink.id, targetTrChannel),
-                  linkChannel(targetChLink, sourceChLink.id, sourceTrChannel),
-                ])
-              ).reduce((v1, v2) => v1 || v2);
-            })()
-          );
-        }
-      );
-    }
-  );
-
-  await Promise.all(promises);
+  linked ||= await linkChannels(toProcessMap);
 
   await interaction.reply({
     content: linked
