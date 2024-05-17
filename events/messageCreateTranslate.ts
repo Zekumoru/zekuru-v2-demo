@@ -19,7 +19,7 @@ import MessageLink, {
 } from '../models/MessageLink';
 import translatorCache from '../cache/translatorCache';
 
-const translate = async (
+export const translateContent = async (
   content: string,
   guildId: string,
   sourceLang: SourceLanguageCode,
@@ -162,7 +162,7 @@ const translateChannel = async (
       });
     }
 
-    const translatedContent = await translate(
+    const translatedContent = await translateContent(
       message.content,
       message.guildId!,
       sourceTrChannel.sourceLang,

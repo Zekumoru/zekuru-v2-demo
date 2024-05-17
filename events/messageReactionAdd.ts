@@ -11,6 +11,7 @@ import { DiscordEvent } from '../types/DiscordEvent';
 import { errorDebug } from '../utils/logger';
 import MessageLink, { IMessageLink } from '../models/MessageLink';
 import channelLinks from '../cache/channelLinks';
+import getMessagesFromMessageLink from '../utils/events/getMessagesFromMessageLink';
 
 export const getMessagesLink = async (
   reaction: MessageReaction | PartialMessageReaction
@@ -38,19 +39,10 @@ export const getMessagesLink = async (
   });
   if (!messageLink) return [];
 
-  const messages = (await Promise.all(
-    messageLink.links.map(async (link) => {
-      // ignore the message that the user has reacted to
-      if (link.messageId === message.id) return;
-
-      const channel = message.guild!.channels.cache.get(link.channelId);
-      if (!channel) return;
-      if (channel.type !== ChannelType.GuildText) return;
-      return await channel.messages.fetch(link.messageId);
-    })
-  )) as unknown as (Message<true> | undefined)[] | undefined;
-
-  return [messages, messageLink] as const;
+  return [
+    await getMessagesFromMessageLink(messageLink, message.id, message.guild),
+    messageLink,
+  ] as const;
 };
 
 export default {
