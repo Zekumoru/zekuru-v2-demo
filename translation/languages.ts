@@ -24,7 +24,11 @@ const loadSourceLanguages = async (translator: deepl.Translator) => {
   appDebug('Source languages loaded.');
 };
 
+let alreadyCalled = false;
 export const loadLanguages = async (translator: deepl.Translator) => {
+  if (alreadyCalled) return;
+  alreadyCalled = true;
+
   const targetPromise =
     targetLanguages.length === 0 ? loadTargetLanguages(translator) : undefined;
   const sourcePromise =
