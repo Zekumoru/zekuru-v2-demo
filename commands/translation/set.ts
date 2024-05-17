@@ -5,7 +5,7 @@ import {
   SlashCommandBuilder,
 } from 'discord.js';
 import { createCommand } from '../../types/DiscordCommand';
-import { sourceLanguages, targetLanguages } from '../../translation/translator';
+import { sourceLanguages, targetLanguages } from '../../translation/languages';
 import translateChannels from '../../cache/translateChannels';
 
 const data = new SlashCommandBuilder()

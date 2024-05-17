@@ -1,18 +1,8 @@
 import * as deepl from 'deepl-node';
 import { appDebug } from '../utils/logger';
 
-const deeplApiKey = process.env.DEEPL_API_KEY;
-const translator = new deepl.Translator(deeplApiKey ?? '', {
-  appInfo: {
-    appName: 'Guide Bot (Zekuru-v2 Demo)',
-    appVersion: '0.0.0',
-  },
-  minTimeout: 1000, // 1 second
-  maxRetries: 5,
-});
-
 export const targetLanguages: deepl.Language[] = [];
-const loadTargetLanguages = async () => {
+const loadTargetLanguages = async (translator: deepl.Translator) => {
   targetLanguages.push(
     ...(await translator.getTargetLanguages()).filter(
       (lang) =>
@@ -29,13 +19,18 @@ const loadTargetLanguages = async () => {
 };
 
 export const sourceLanguages: deepl.Language[] = [];
-const loadSourceLanguages = async () => {
+const loadSourceLanguages = async (translator: deepl.Translator) => {
   sourceLanguages.push(...(await translator.getSourceLanguages()));
   appDebug('Source languages loaded.');
 };
 
-(async () => {
-  await Promise.all([loadTargetLanguages(), loadSourceLanguages()]);
-})();
+export const loadLanguages = async (translator: deepl.Translator) => {
+  const targetPromise =
+    targetLanguages.length === 0 ? loadTargetLanguages(translator) : undefined;
+  const sourcePromise =
+    sourceLanguages.length === 0 ? loadSourceLanguages(translator) : undefined;
 
-export default translator;
+  // this already accounts if the languages are already loaded
+  // I'm referring to undefined promises so need for an if-statement
+  await Promise.all([targetPromise, sourcePromise]);
+};

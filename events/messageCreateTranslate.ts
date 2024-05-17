@@ -7,7 +7,6 @@ import {
 } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
 import tagTranscoder from '../utils/tagTranscoder';
-import translator from '../translation/translator';
 import translateChannels from '../cache/translateChannels';
 import channelLinks from '../cache/channelLinks';
 import webhookCache from '../cache/webhookCache';
@@ -18,9 +17,11 @@ import MessageLink, {
   IMessageLink,
   IMessageLinkItem,
 } from '../models/MessageLink';
+import translatorCache from '../cache/translatorCache';
 
 const translate = async (
   content: string,
+  guildId: string,
   sourceLang: SourceLanguageCode,
   targetLang: TargetLanguageCode
 ) => {
@@ -28,6 +29,7 @@ const translate = async (
 
   const [messageToTranslate, tagTable] = tagTranscoder.encode(content);
 
+  const translator = (await translatorCache.get(guildId))!;
   const translatedContentToDecode = (
     await translator.translateText(messageToTranslate, sourceLang, targetLang)
   ).text;
@@ -162,6 +164,7 @@ const translateChannel = async (
 
     const translatedContent = await translate(
       message.content,
+      message.guildId!,
       sourceTrChannel.sourceLang,
       targetTrChannel.targetLang
     );
@@ -183,6 +186,8 @@ const translateChannel = async (
 export default {
   name: Events.MessageCreate,
   execute: async (message: Message) => {
+    if (!message.guildId) return;
+
     // ignore this bot's webhooks messages
     if (message.author.id !== message.client.user.id && message.webhookId) {
       const webhook = await message.fetchWebhook();
@@ -192,6 +197,15 @@ export default {
     const sourceTrChannel = await translateChannels.get(message.channelId);
     const link = await channelLinks.get(message.channelId);
     if (!sourceTrChannel || !link) return;
+
+    // check if this bot has a translator
+    if ((await translatorCache.get(message.guildId)) == null) {
+      if (message.author.id === message.client.user.id) return; // ignore this bot
+      message.reply({
+        content: `Cannot translate, no api key found. Please sign in using the \`/sign-in\` command.`,
+      });
+      return;
+    }
 
     const messages = await Promise.all(
       link.links.map(async ({ id: channelId }) =>
