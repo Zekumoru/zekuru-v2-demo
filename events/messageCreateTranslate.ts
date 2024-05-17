@@ -170,12 +170,16 @@ const translateChannel = async (
     let translatedContent: string | undefined;
     if (emojiTag) {
       const [animRaw, _name, idRaw] = emojiTag.split(':');
-      const ext = animRaw[1] === 'a' ? 'gif' : 'png';
-      translatedContent = `https://media.discordapp.net/emojis/${idRaw.slice(
-        0,
-        idRaw.length - 1
-      )}.${ext}`;
-    } else {
+      const emojiId = idRaw.slice(0, idRaw.length - 1);
+
+      // only swap emoji with image if the bot doesn't have it
+      if (!message.client.emojis.cache.find((emoji) => emoji.id === emojiId)) {
+        const ext = animRaw[1] === 'a' ? 'gif' : 'png';
+        translatedContent = `https://media.discordapp.net/emojis/${emojiId}.${ext}`;
+      }
+    }
+
+    if (translatedContent === undefined) {
       translatedContent = await translateContent(
         message.content,
         message.guildId!,
