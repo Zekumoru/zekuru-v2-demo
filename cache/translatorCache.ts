@@ -4,6 +4,7 @@ import GuildKey, { IGuildKey } from '../models/GuildKey';
 import { loadLanguages } from '../translation/languages';
 import { errorDebug } from '../utils/logger';
 import { decrypt, encrypt } from '../utils/crypt';
+import TranslateChannel from '../models/TranslateChannel';
 
 const translatorOptions: TranslatorOptions = {
   appInfo: {
@@ -35,8 +36,8 @@ const set = async (guildId: string, apiKey: string) => {
   // create translator client
   const translator = new Translator(apiKey, translatorOptions);
 
-  // this should throw error if invalid api key and also loads the languages
-  // two birds in one stone
+  // this should throw error if invalid api key
+  await translator.getUsage();
   await loadLanguages(translator);
 
   // encrypt api key
@@ -86,4 +87,15 @@ const get = async (guildId: string) => {
   }
 };
 
-export default { set, get };
+const unset = async (guildId: string) => {
+  // check if it exists first
+  if ((await get(guildId)) == null) return;
+
+  // delete from db
+  await GuildKey.deleteOne({ id: guildId });
+
+  // remove from cache
+  cacheTranslators.delete(guildId);
+};
+
+export default { set, unset, get };
