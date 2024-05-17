@@ -77,37 +77,48 @@ export const linkChannel = async (
   return false;
 };
 
-export interface IChLinkProcessMapValue {
+export interface IChProcessMapValue {
   chLink: IChannelLink;
   trChannel: ITranslateChannel;
 }
 
+export const linkChannelNoDB = (
+  channelLink: IChannelLink,
+  channelId: string,
+  translateChannel: ITranslateChannel
+) => {
+  if (channelLink.links.find((link) => link.id === channelId) === undefined) {
+    channelLink.links.push(translateChannel);
+    return true;
+  }
+  return false;
+};
+
 export const linkChannels = async (
-  toProcessMap: Map<string, IChLinkProcessMapValue>
+  processMap: Map<string, IChProcessMapValue>
 ) => {
   let linked = false;
+  processMap.forEach(({ chLink: sourceChLink }) => {
+    processMap.forEach(
+      ({ chLink: targetChLink, trChannel: targetTrChannel }) => {
+        if (sourceChLink === targetChLink) return;
+
+        linked =
+          linkChannelNoDB(sourceChLink, targetChLink.id, targetTrChannel) ||
+          linked;
+      }
+    );
+  });
+
+  // save to db
   const promises: Promise<void>[] = [];
-
-  toProcessMap.forEach(
-    ({ chLink: sourceChLink, trChannel: sourceTrChannel }) => {
-      toProcessMap.forEach(
-        ({ chLink: targetChLink, trChannel: targetTrChannel }) => {
-          if (sourceChLink === targetChLink) return;
-
-          promises.push(
-            (async () => {
-              linked ||= (
-                await Promise.all([
-                  linkChannel(sourceChLink, targetChLink.id, targetTrChannel),
-                  linkChannel(targetChLink, sourceChLink.id, sourceTrChannel),
-                ])
-              ).reduce((v1, v2) => v1 || v2);
-            })()
-          );
-        }
-      );
-    }
-  );
+  processMap.forEach(({ chLink }) => {
+    promises.push(
+      (async () => {
+        await channelLinks.update(chLink);
+      })()
+    );
+  });
   await Promise.all(promises);
 
   return linked;
@@ -183,7 +194,9 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // link bidirectional
-  linked ||= await linkChannel(targetChLink, sourceChannelId, sourceTrChannel);
+  linked =
+    (await linkChannel(targetChLink, sourceChannelId, sourceTrChannel)) ||
+    linked;
   if (mode === LinkOptions.mode.BIDIRECTIONAL) {
     await interaction.reply({
       content: linked
@@ -195,7 +208,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
   // link recursive
   const jobQueue = [sourceChLink, targetChLink];
-  const toProcessMap = new Map<string, IChLinkProcessMapValue>();
+  const toProcessMap = new Map<string, IChProcessMapValue>();
 
   // already add these to map to save time
   toProcessMap.set(sourceChLink.id, {
@@ -230,7 +243,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // start linking recursively O(n^2) [actually O(n^3) because of linkChannel()]
-  linked ||= await linkChannels(toProcessMap);
+  linked = (await linkChannels(toProcessMap)) || linked;
 
   await interaction.reply({
     content: linked

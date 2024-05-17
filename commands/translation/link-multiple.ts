@@ -6,7 +6,7 @@ import {
 } from 'discord.js';
 import { createCommand } from '../../types/DiscordCommand';
 import translateChannels from '../../cache/translateChannels';
-import { IChLinkProcessMapValue, getChLink, linkChannels } from './link';
+import { IChProcessMapValue, getChLink, linkChannels } from './link';
 
 const CHANNEL_ID_REGEX = /<#\d*>/g;
 
@@ -56,7 +56,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   // map for storing ids that aren't language channels to tell the user
   const nonTrChannelIdsMap = new Collection<string, boolean>();
 
-  const chProcessMap = new Collection<string, IChLinkProcessMapValue>();
+  const chProcessMap = new Collection<string, IChProcessMapValue>();
   await Promise.all(
     channelTags.map(async (channelTag) => {
       const channelId = channelTag.slice(2, channelTag.length - 1);
@@ -79,7 +79,9 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   );
 
   const nonTrChannelsWarning = nonTrChannelIdsMap.size
-    ? `${stringChannels(nonTrChannelIdsMap.map((_, channelId) => channelId))} ${
+    ? `\n${stringChannels(
+        nonTrChannelIdsMap.map((_, channelId) => channelId)
+      )} ${
         nonTrChannelIdsMap.size === 1 ? 'is' : 'are'
       } not linked because they are not set to any language. Please use the \`/set\` command to specify ${
         nonTrChannelIdsMap.size === 1 ? 'its language' : 'their languages'
@@ -92,7 +94,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
         chProcessMap.size === 0
           ? `you didn't provide any translate channels!`
           : `please provide more than one translate channel!`
-      }${nonTrChannelsWarning ? `\n${nonTrChannelsWarning}` : ''}`,
+      }${nonTrChannelsWarning}`,
     });
     return;
   }
@@ -105,13 +107,13 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
   if (!linked) {
     interaction.reply({
-      content: `${linkedChannelsString} are already linked!`,
+      content: `${linkedChannelsString} are already linked!${nonTrChannelsWarning}`,
     });
     return;
   }
 
   interaction.reply({
-    content: `${linkedChannelsString} are now linked!`,
+    content: `${linkedChannelsString} are now linked!${nonTrChannelsWarning}`,
   });
 };
 
