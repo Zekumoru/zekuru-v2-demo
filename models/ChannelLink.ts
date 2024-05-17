@@ -3,6 +3,7 @@ import { ITranslateChannel } from './TranslateChannel';
 
 interface IChannelLinkSchema {
   id: string;
+  guildId: string;
   links: ITranslateChannel[];
   createdAt: Date;
 }
@@ -13,6 +14,10 @@ export interface IChannelLink extends IChannelLinkSchema {
 
 const ChannelLinkSchema = new Schema<IChannelLinkSchema>({
   id: {
+    type: String,
+    required: true,
+  },
+  guildId: {
     type: String,
     required: true,
   },

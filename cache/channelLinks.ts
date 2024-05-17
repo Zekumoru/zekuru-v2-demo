@@ -3,7 +3,7 @@ import ChannelLink, { IChannelLink } from '../models/ChannelLink';
 
 const cacheLinks = new Collection<string, IChannelLink>();
 
-const getLink = async (channelId: string) => {
+const getLink = async (channelId: string, guildId: string) => {
   // fetch from db, if not exists, create new
   const link = await ChannelLink.findOne({ id: channelId })
     .populate('links')
@@ -11,6 +11,7 @@ const getLink = async (channelId: string) => {
   if (link) return link;
 
   const newLink = new ChannelLink({
+    guildId,
     id: channelId,
     links: [],
   });
@@ -18,11 +19,12 @@ const getLink = async (channelId: string) => {
   return newLink;
 };
 
-const create = async (channelId: string) => {
+const create = async (channelId: string, guildId: string) => {
   // create otherwise fetch
-  const link = await getLink(channelId);
+  const link = await getLink(channelId, guildId);
 
   cacheLinks.set(channelId, {
+    guildId,
     _id: link._id,
     id: link.id,
     links: link.links,
@@ -33,12 +35,15 @@ const create = async (channelId: string) => {
 
 const update = async (channelLink: IChannelLink) => {
   // update in db
-  const link = await getLink(channelLink.id);
+  const link = await getLink(channelLink.id, channelLink.guildId);
   link.overwrite(channelLink);
   await link.save();
 
   // update cache
-  cacheLinks.set(channelLink.id, await getLink(channelLink.id));
+  cacheLinks.set(
+    channelLink.id,
+    await getLink(channelLink.id, channelLink.guildId)
+  );
 };
 
 const get = async (channelId: string) => {
@@ -55,6 +60,7 @@ const get = async (channelId: string) => {
   cacheLinks.set(channelId, {
     _id: link._id,
     id: link.id,
+    guildId: link.guildId,
     links: link.links,
     createdAt: link.createdAt,
   });

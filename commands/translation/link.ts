@@ -57,14 +57,14 @@ const data = new SlashCommandBuilder()
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
-const getChLink = async (channelId: string) => {
+export const getChLink = async (channelId: string, guildId: string) => {
   return (
     (await channelLinks.get(channelId)) ??
-    (await channelLinks.create(channelId))
+    (await channelLinks.create(channelId, guildId))
   );
 };
 
-const linkChannel = async (
+export const linkChannel = async (
   channelLink: IChannelLink,
   channelId: string,
   translateChannel: ITranslateChannel
@@ -77,12 +77,12 @@ const linkChannel = async (
   return false;
 };
 
-interface IChProcessMapValue {
+export interface IChProcessMapValue {
   chLink: IChannelLink;
   trChannel: ITranslateChannel;
 }
 
-const linkChannelNoDB = (
+export const linkChannelNoDB = (
   channelLink: IChannelLink,
   channelId: string,
   translateChannel: ITranslateChannel
@@ -94,23 +94,18 @@ const linkChannelNoDB = (
   return false;
 };
 
-const linkChannels = async (processMap: Map<string, IChProcessMapValue>) => {
+export const linkChannels = async (
+  processMap: Map<string, IChProcessMapValue>
+) => {
   let linked = false;
-  processMap.forEach(({ chLink: sourceChLink, trChannel: sourceTrChannel }) => {
+  processMap.forEach(({ chLink: sourceChLink }) => {
     processMap.forEach(
       ({ chLink: targetChLink, trChannel: targetTrChannel }) => {
         if (sourceChLink === targetChLink) return;
 
-        linked ||= linkChannelNoDB(
-          sourceChLink,
-          targetChLink.id,
-          targetTrChannel
-        );
-        linked ||= linkChannelNoDB(
-          targetChLink,
-          sourceChLink.id,
-          sourceTrChannel
-        );
+        linked =
+          linkChannelNoDB(sourceChLink, targetChLink.id, targetTrChannel) ||
+          linked;
       }
     );
   });
@@ -130,6 +125,13 @@ const linkChannels = async (processMap: Map<string, IChProcessMapValue>) => {
 };
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
+  if (!interaction.guildId) {
+    await interaction.reply({
+      content: `This command is only available on servers.`,
+    });
+    return;
+  }
+
   const sourceChannelId =
     interaction.options.getChannel(LinkOptions.SOURCE_CHANNEL)?.id ??
     interaction.channelId;
@@ -174,8 +176,8 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
   // add to their respective link documents
   const [sourceChLink, targetChLink] = await Promise.all([
-    getChLink(sourceChannelId),
-    getChLink(targetChannelId),
+    getChLink(sourceChannelId, interaction.guildId),
+    getChLink(targetChannelId, interaction.guildId),
   ]);
 
   let linked = false;
@@ -192,7 +194,9 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // link bidirectional
-  linked ||= await linkChannel(targetChLink, sourceChannelId, sourceTrChannel);
+  linked =
+    (await linkChannel(targetChLink, sourceChannelId, sourceTrChannel)) ||
+    linked;
   if (mode === LinkOptions.mode.BIDIRECTIONAL) {
     await interaction.reply({
       content: linked
@@ -225,7 +229,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
       const [linkTrChannel, linkChLink] = await Promise.all([
         translateChannels.get(link.id),
-        getChLink(link.id),
+        getChLink(link.id, interaction.guildId),
       ]);
       jobQueue.push(linkChLink);
 
@@ -239,7 +243,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // start linking recursively O(n^2) [actually O(n^3) because of linkChannel()]
-  linked ||= await linkChannels(toProcessMap);
+  linked = (await linkChannels(toProcessMap)) || linked;
 
   await interaction.reply({
     content: linked
