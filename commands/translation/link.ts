@@ -77,6 +77,58 @@ const linkChannel = async (
   return false;
 };
 
+interface IChProcessMapValue {
+  chLink: IChannelLink;
+  trChannel: ITranslateChannel;
+}
+
+const linkChannelNoDB = (
+  channelLink: IChannelLink,
+  channelId: string,
+  translateChannel: ITranslateChannel
+) => {
+  if (channelLink.links.find((link) => link.id === channelId) === undefined) {
+    channelLink.links.push(translateChannel);
+    return true;
+  }
+  return false;
+};
+
+const linkChannels = async (processMap: Map<string, IChProcessMapValue>) => {
+  let linked = false;
+  processMap.forEach(({ chLink: sourceChLink, trChannel: sourceTrChannel }) => {
+    processMap.forEach(
+      ({ chLink: targetChLink, trChannel: targetTrChannel }) => {
+        if (sourceChLink === targetChLink) return;
+
+        linked ||= linkChannelNoDB(
+          sourceChLink,
+          targetChLink.id,
+          targetTrChannel
+        );
+        linked ||= linkChannelNoDB(
+          targetChLink,
+          sourceChLink.id,
+          sourceTrChannel
+        );
+      }
+    );
+  });
+
+  // save to db
+  const promises: Promise<void>[] = [];
+  processMap.forEach(({ chLink }) => {
+    promises.push(
+      (async () => {
+        await channelLinks.update(chLink);
+      })()
+    );
+  });
+  await Promise.all(promises);
+
+  return linked;
+};
+
 const execute = async (interaction: ChatInputCommandInteraction) => {
   const sourceChannelId =
     interaction.options.getChannel(LinkOptions.SOURCE_CHANNEL)?.id ??
@@ -152,13 +204,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
   // link recursive
   const jobQueue = [sourceChLink, targetChLink];
-  const toProcessMap = new Map<
-    string,
-    {
-      chLink: IChannelLink;
-      trChannel: ITranslateChannel;
-    }
-  >();
+  const toProcessMap = new Map<string, IChProcessMapValue>();
 
   // already add these to map to save time
   toProcessMap.set(sourceChLink.id, {
@@ -193,29 +239,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // start linking recursively O(n^2) [actually O(n^3) because of linkChannel()]
-  const promises: Promise<void>[] = [];
-
-  toProcessMap.forEach(
-    ({ chLink: sourceChLink, trChannel: sourceTrChannel }) => {
-      toProcessMap.forEach(
-        ({ chLink: targetChLink, trChannel: targetTrChannel }) => {
-          if (sourceChLink === targetChLink) return;
-          promises.push(
-            (async () => {
-              linked ||= (
-                await Promise.all([
-                  linkChannel(sourceChLink, targetChLink.id, targetTrChannel),
-                  linkChannel(targetChLink, sourceChLink.id, sourceTrChannel),
-                ])
-              ).reduce((v1, v2) => v1 || v2);
-            })()
-          );
-        }
-      );
-    }
-  );
-
-  await Promise.all(promises);
+  linked ||= await linkChannels(toProcessMap);
 
   await interaction.reply({
     content: linked
