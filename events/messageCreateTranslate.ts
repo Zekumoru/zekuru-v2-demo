@@ -3,7 +3,7 @@ import {
   EmbedBuilder,
   Events,
   Message,
-  StickerFormatType,
+  MessageType,
   TextChannel,
 } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
@@ -41,6 +41,47 @@ export const translateContent = async (
   );
 
   return translatedContent;
+};
+
+const buildEmbed = (name: string, iconURL: string, content: string) => {
+  return new EmbedBuilder()
+    .setColor(0x0099ff)
+    .setAuthor({
+      name,
+      iconURL,
+    })
+    .setDescription(content);
+};
+
+const buildCommandReplyEmbed = async (
+  message: Message,
+  sourceLang: SourceLanguageCode,
+  targetLang: TargetLanguageCode
+) => {
+  if (message.type !== MessageType.ChatInputCommand) return;
+  if (!message.interaction) return;
+  if (!message.guildId) return;
+
+  const content = `Used:`;
+  const translatedContent = await translateContent(
+    content,
+    message.guildId,
+    sourceLang,
+    targetLang
+  );
+  if (!translatedContent) return;
+
+  const author = message.interaction.user;
+  const member = message.guild?.members.cache.get(author.id);
+
+  return {
+    embed: buildEmbed(
+      member?.nickname ?? message.author.displayName,
+      member?.avatarURL({ size: 32 }) ?? author.displayAvatarURL({ size: 32 }),
+      `${translatedContent} \`/${message.interaction.commandName}\``
+    ),
+    message: message,
+  };
 };
 
 const buildReplyEmbed = async (message: Message, replyChannel: TextChannel) => {
@@ -93,15 +134,12 @@ const buildReplyEmbed = async (message: Message, replyChannel: TextChannel) => {
   }
 
   return {
-    embed: new EmbedBuilder()
-      .setColor(0x0099ff)
-      .setAuthor({
-        name: replyMessage.member?.nickname ?? replyMessage.author.displayName,
-        iconURL:
-          replyMessage.member?.avatarURL({ size: 32 }) ??
-          replyMessage.author.displayAvatarURL({ size: 32 }),
-      })
-      .setDescription(replyContent),
+    embed: buildEmbed(
+      replyMessage.member?.nickname ?? replyMessage.author.displayName,
+      replyMessage.member?.avatarURL({ size: 32 }) ??
+        replyMessage.author.displayAvatarURL({ size: 32 }),
+      replyContent
+    ),
     message: replyMessage,
   };
 };
@@ -144,7 +182,13 @@ const translateChannel = async (
 
   try {
     // get reply embed
-    const reply = await buildReplyEmbed(message, channel);
+    const reply =
+      (await buildReplyEmbed(message, channel)) ??
+      (await buildCommandReplyEmbed(
+        message,
+        sourceTrChannel.sourceLang,
+        targetTrChannel.targetLang
+      ));
     const replyAuthorId = !reply?.message.author.bot
       ? reply?.message.author.id
       : undefined;
