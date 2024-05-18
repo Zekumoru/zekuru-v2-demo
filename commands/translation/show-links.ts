@@ -30,9 +30,9 @@ const showLinksString = (
     strBuilder.push(`\n- <#${link.id}> **(${link.sourceLang})**`)
   );
 
-  return `Showing links of <#${chLink.id}> **(${
-    trChannel.sourceLang
-  })**${strBuilder.join('')}`;
+  return `<#${chLink.id}> **(${trChannel.sourceLang})** is linked to ${
+    chLink.links.length
+  } channels: ${strBuilder.join('')}`;
 };
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
@@ -88,9 +88,9 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   );
 
   interaction.reply({
-    content: `**Showing all translate channels links**\n\n${strBuilder.join(
-      ''
-    )}`,
+    content: `**Showing all translate channels links**\nThere are a total of ${
+      chLinks.length
+    } translate channels.\n\n${strBuilder.join('')}`,
   });
 };
 
