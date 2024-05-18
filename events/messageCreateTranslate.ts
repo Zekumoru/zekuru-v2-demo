@@ -175,7 +175,7 @@ const translateChannel = async (
       // only swap emoji with image if the bot doesn't have it
       if (!message.client.emojis.cache.find((emoji) => emoji.id === emojiId)) {
         const ext = animRaw[1] === 'a' ? 'gif' : 'png';
-        translatedContent = `https://media.discordapp.net/emojis/${emojiId}.${ext}`;
+        translatedContent = `https://media.discordapp.net/emojis/${emojiId}.${ext}?size=48`;
       }
     }
 
