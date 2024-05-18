@@ -168,7 +168,7 @@ const translateChannel = async (
     const emojiTag = message.content.trim().match(/^<a?:.*:\d*>$/)?.[0];
 
     let translatedContent: string | undefined;
-    if (emojiTag) {
+    if (emojiTag && reply === undefined) {
       const [animRaw, _name, idRaw] = emojiTag.split(':');
       const emojiId = idRaw.slice(0, idRaw.length - 1);
 
