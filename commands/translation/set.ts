@@ -45,6 +45,14 @@ const autocomplete = async (interaction: AutocompleteInteraction) => {
 };
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
+  if (!interaction.guildId) {
+    await interaction.reply({
+      content: `This command is only available on servers.`,
+    });
+    return;
+  }
+
+  const guildId = interaction.guildId;
   const channelId =
     interaction.options.getChannel('channel')?.id ?? interaction.channelId;
 
@@ -119,7 +127,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
       });
 
       if (confirmation.customId === 'confirm') {
-        await translateChannels.set(channelId, sourceLang, targetLang);
+        await translateChannels.set(channelId, guildId, sourceLang, targetLang);
         await confirmation.update({
           content: `<#${channelId}> has been changed to \`${language}\`.`,
           components: [],
@@ -147,7 +155,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   }
 
   // set channel's language for the first time
-  await translateChannels.set(channelId, sourceLang, targetLang);
+  await translateChannels.set(channelId, guildId, sourceLang, targetLang);
   await interaction.reply({
     content: `<#${channelId}> has been set to \`${language}\`.`,
   });

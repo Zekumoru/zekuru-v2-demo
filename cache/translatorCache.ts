@@ -4,9 +4,8 @@ import GuildKey, { IGuildKey } from '../models/GuildKey';
 import { loadLanguages } from '../translation/languages';
 import { errorDebug } from '../utils/logger';
 import { decrypt, encrypt } from '../utils/crypt';
-import TranslateChannel from '../models/TranslateChannel';
 
-const translatorOptions: TranslatorOptions = {
+export const translatorOptions: TranslatorOptions = {
   appInfo: {
     appName: 'Guide Bot (Zekuru-v2 Demo)',
     appVersion: '0.0.0',

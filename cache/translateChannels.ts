@@ -7,6 +7,7 @@ const channels = new Collection<string, ITranslateChannel>();
 
 const getChannel = async (
   channelId: string,
+  guildId: string,
   sourceLang: string,
   targetLang: string
 ) => {
@@ -16,6 +17,7 @@ const getChannel = async (
 
   const newChannel = new TranslateChannel({
     id: channelId,
+    guildId,
     sourceLang,
     targetLang,
   });
@@ -25,13 +27,15 @@ const getChannel = async (
 
 const set = async (
   channelId: string,
+  guildId: string,
   sourceLang: string,
   targetLang: string
 ) => {
   // update in db
-  const channel = await getChannel(channelId, sourceLang, targetLang);
+  const channel = await getChannel(channelId, guildId, sourceLang, targetLang);
   channel.overwrite({
     id: channelId,
+    guildId: channel.guildId,
     sourceLang,
     targetLang,
     createdAt: channel.createdAt,
@@ -42,6 +46,7 @@ const set = async (
   channels.set(channelId, {
     _id: channel._id,
     id: channel.id,
+    guildId: channel.guildId,
     targetLang: channel.targetLang as TargetLanguageCode,
     sourceLang: channel.sourceLang as SourceLanguageCode,
     createdAt: channel.createdAt,
@@ -61,6 +66,7 @@ const get = async (channelId: string) => {
   channels.set(channelId, {
     _id: channel._id,
     id: channel.id,
+    guildId: channel.guildId,
     targetLang: channel.targetLang as TargetLanguageCode,
     sourceLang: channel.sourceLang as SourceLanguageCode,
     createdAt: channel.createdAt,
