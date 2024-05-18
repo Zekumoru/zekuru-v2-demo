@@ -86,11 +86,16 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
       );
     })
   );
+  // TODO: HANDLE 2000 CHARACTERS LIMIT
+  let channelsString = strBuilder.join('');
+  if (channelsString.length > 1600) {
+    channelsString =
+      channelsString.slice(0, 1600) +
+      `...\n\nCannot show full list because of Discord's characters limit. Please manually use \`/show-links <channel>\` to view each channel's links.`;
+  }
 
   interaction.reply({
-    content: `**Showing all translate channels links**\nThere are a total of ${
-      chLinks.length
-    } translate channels.\n\n${strBuilder.join('')}`,
+    content: `**Showing all translate channels links**\nThere are a total of ${chLinks.length} translate channels.\n\n${channelsString}`,
   });
 };
 
