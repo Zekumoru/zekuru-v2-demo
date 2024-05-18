@@ -1,4 +1,4 @@
-import { Translator, TranslatorOptions } from 'deepl-node';
+import { AuthorizationError, Translator, TranslatorOptions } from 'deepl-node';
 import { Collection } from 'discord.js';
 import GuildKey, { IGuildKey } from '../models/GuildKey';
 import { loadLanguages } from '../translation/languages';
@@ -82,6 +82,10 @@ const get = async (guildId: string) => {
     cacheTranslators.set(guildId, translator);
     return translator;
   } catch (error) {
+    // delete invalid api key from db and "sign out" user by removing it from cache
+    if (error instanceof AuthorizationError) {
+      await unset(guildId);
+    }
     errorDebug(error);
   }
 };

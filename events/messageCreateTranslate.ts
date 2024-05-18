@@ -10,7 +10,11 @@ import tagTranscoder from '../utils/tagTranscoder';
 import translateChannels from '../cache/translateChannels';
 import channelLinks from '../cache/channelLinks';
 import webhookCache from '../cache/webhookCache';
-import { SourceLanguageCode, TargetLanguageCode } from 'deepl-node';
+import {
+  AuthorizationError,
+  SourceLanguageCode,
+  TargetLanguageCode,
+} from 'deepl-node';
 import { errorDebug } from '../utils/logger';
 import { ITranslateChannel } from '../models/TranslateChannel';
 import MessageLink, {
@@ -40,7 +44,9 @@ export const translateContent = async (
 
   const [messageToTranslate, tagTable] = tagTranscoder.encode(toTranslate);
 
-  const translator = (await translatorCache.get(guildId))!;
+  const translator = await translatorCache.get(guildId);
+  if (!translator) throw new AuthorizationError('Invalid api key');
+
   const translatedContentToDecode = (
     await translator.translateText(messageToTranslate, sourceLang, targetLang)
   ).text;
@@ -286,6 +292,11 @@ const translateChannel = async (
 
     return webhookMessage;
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      await message.reply({
+        content: `Cannot translate, invalid Deepl api key. Please check if you changed/disabled the api key then sign in again using the \`/sign-in\` command with a **valid** Deepl api key.`,
+      });
+    }
     errorDebug(error);
   }
 };
