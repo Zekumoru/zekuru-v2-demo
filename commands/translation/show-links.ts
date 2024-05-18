@@ -8,6 +8,7 @@ import channelLinks from '../../cache/channelLinks';
 import translateChannels from '../../cache/translateChannels';
 import ChannelLink, { IChannelLink } from '../../models/ChannelLink';
 import { ITranslateChannel } from '../../models/TranslateChannel';
+import buildLongContentEmbeds from '../../utils/commands/buildLongContentEmbeds';
 
 const data = new SlashCommandBuilder()
   .setName('show-links')
@@ -86,16 +87,20 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
       );
     })
   );
-  // TODO: HANDLE 2000 CHARACTERS LIMIT
-  let channelsString = strBuilder.join('');
-  if (channelsString.length > 1600) {
-    channelsString =
-      channelsString.slice(0, 1600) +
-      `...\n\nCannot show full list because of Discord's characters limit. Please manually use \`/show-links <channel>\` to view each channel's links.`;
+
+  // Handle 2K characters limit
+  const content = `**Showing all translate channels links**\nThere are a total of ${
+    chLinks.length
+  } translate channels.\n\n${strBuilder.join('')}`;
+  if (content.length <= 2000) {
+    interaction.reply({
+      content,
+    });
+    return;
   }
 
   interaction.reply({
-    content: `**Showing all translate channels links**\nThere are a total of ${chLinks.length} translate channels.\n\n${channelsString}`,
+    embeds: buildLongContentEmbeds(content),
   });
 };
 

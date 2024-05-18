@@ -8,6 +8,7 @@ import {
 import { DiscordEvent } from '../types/DiscordEvent';
 import webhookCache from '../cache/webhookCache';
 import { errorDebug } from '../utils/logger';
+import buildLongContentEmbeds from '../utils/commands/buildLongContentEmbeds';
 
 export default {
   name: Events.MessageCreate,
@@ -19,37 +20,14 @@ export default {
     if (!channel) return;
     if (channel.type !== ChannelType.GuildText) return;
 
-    const webhook = await webhookCache.get(channel);
-    // const embed = new EmbedBuilder()
-    //   .setColor(0x0099ff)
-    //   .setAuthor({
-    //     name: message.member?.nickname ?? message.author.displayName,
-    //     iconURL:
-    //       message.member?.avatarURL({ size: 32 }) ??
-    //       message.author.displayAvatarURL({ size: 32 }),
-    //   })
-    //   .setDescription(`Edit maybe?`);
-    try {
-      await webhook.deleteMessage('1241129650424643595');
-    } catch (error) {
-      errorDebug(error);
-    }
-    // const embed = new EmbedBuilder()
-    //   .setColor(0x0099ff)
-    //   .setAuthor({
-    //     name: message.member?.nickname ?? message.author.displayName,
-    //     iconURL:
-    //       message.member?.avatarURL({ size: 32 }) ??
-    //       message.author.displayAvatarURL({ size: 32 }),
-    //   })
-    //   .setDescription(`<@${message.author.id}>`);
+    if (message.content === '') return;
 
-    // webhook.send({
-    //   username: message.member?.displayName ?? message.author.displayName,
-    //   avatarURL:
-    //     message.member?.avatarURL() ?? message.author.avatarURL() ?? undefined,
-    //   content: `Are you pinged?`,
-    //   embeds: [embed],
-    // });
+    const webhook = await webhookCache.get(channel);
+    webhook.send({
+      username: message.member?.displayName ?? message.author.displayName,
+      avatarURL:
+        message.member?.avatarURL() ?? message.author.avatarURL() ?? undefined,
+      embeds: buildLongContentEmbeds(message.content),
+    });
   },
 } as DiscordEvent;

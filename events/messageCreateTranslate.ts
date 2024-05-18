@@ -19,6 +19,7 @@ import MessageLink, {
   IMessageLinkItem,
 } from '../models/MessageLink';
 import translatorCache from '../cache/translatorCache';
+import { buildEmbed } from '../utils/commands/buildLongContentEmbeds';
 
 export const translateContent = async (
   content: string,
@@ -41,16 +42,6 @@ export const translateContent = async (
   );
 
   return translatedContent;
-};
-
-const buildEmbed = (name: string, iconURL: string, content: string) => {
-  return new EmbedBuilder()
-    .setColor(0x0099ff)
-    .setAuthor({
-      name,
-      iconURL,
-    })
-    .setDescription(content);
 };
 
 const buildCommandReplyEmbed = async (
