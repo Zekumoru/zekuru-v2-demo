@@ -2,7 +2,10 @@ import { ChannelType, Events, Message, PartialMessage } from 'discord.js';
 import webhookCache from '../cache/webhookCache';
 import MessageLink from '../models/MessageLink';
 import getMessagesFromMessageLink from '../utils/events/getMessagesFromMessageLink';
-import { translateContent } from './messageCreateTranslate';
+import {
+  DISCORD_MESSAGE_CHARS_LIMIT,
+  translateContent,
+} from './messageCreateTranslate';
 import translateChannels from '../cache/translateChannels';
 import { errorDebug } from '../utils/logger';
 
@@ -48,6 +51,13 @@ export const updateTranslateMessages = async (
         // edit old message
         const webhook = await webhookCache.get(message.channel);
         await webhook.editMessage(message.id, { content: translatedContent });
+
+        // notify user if they edited the message over 2K
+        if (newMessage.content!.length > DISCORD_MESSAGE_CHARS_LIMIT) {
+          await newMessage.reply({
+            content: `**Warning:** You edited the message over 2000 characters. Due to Discord's characters limit, only the first 2000 characters will be translated.`,
+          });
+        }
       } catch (error) {
         errorDebug(error);
       }

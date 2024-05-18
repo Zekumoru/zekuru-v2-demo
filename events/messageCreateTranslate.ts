@@ -20,7 +20,7 @@ import MessageLink, {
 import translatorCache from '../cache/translatorCache';
 import { buildEmbed } from '../utils/commands/buildLongContentEmbeds';
 
-const DISCORD_MESSAGE_CHARS_LIMIT = 2000;
+export const DISCORD_MESSAGE_CHARS_LIMIT = 2000;
 
 export const translateContent = async (
   content: string,
@@ -233,7 +233,7 @@ const translateChannel = async (
 
     const attachments = message.attachments.map((attachment) => attachment);
 
-    await webhook.send({
+    const webhookMessage = await webhook.send({
       username,
       avatarURL,
       content: addReplyPing(translatedContent, replyAuthorId),
@@ -248,7 +248,7 @@ const translateChannel = async (
       });
     }
 
-    return;
+    return webhookMessage;
   } catch (error) {
     errorDebug(error);
   }
