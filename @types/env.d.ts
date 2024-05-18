@@ -7,6 +7,7 @@ declare global {
       GUILD_ID?: string;
       MONGODB_CONNECTION_STRING?: string;
       CIPHER_SECRET_KEY?: string;
+      CHANNEL_LINK_LIMIT?: string;
     }
   }
 }

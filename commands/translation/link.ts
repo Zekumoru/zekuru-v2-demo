@@ -9,6 +9,10 @@ import channelLinks from '../../cache/channelLinks';
 import { IChannelLink } from '../../models/ChannelLink';
 import { ITranslateChannel } from '../../models/TranslateChannel';
 
+export const CHANNEL_LINK_LIMIT = isNaN(Number(process.env.CHANNEL_LINK_LIMIT))
+  ? 5
+  : Number(process.env.CHANNEL_LINK_LIMIT);
+
 const LinkOptions = {
   SOURCE_CHANNEL: 'source-channel',
   TARGET_CHANNEL: 'target-channel',
@@ -77,7 +81,7 @@ export const linkChannel = async (
   return false;
 };
 
-export interface IChProcessMapValue {
+export interface IAllChLinkMapValue {
   chLink: IChannelLink;
   trChannel: ITranslateChannel;
 }
@@ -95,11 +99,11 @@ export const linkChannelNoDB = (
 };
 
 export const linkChannels = async (
-  processMap: Map<string, IChProcessMapValue>
+  allChLinkMap: Map<string, IAllChLinkMapValue>
 ) => {
   let linked = false;
-  processMap.forEach(({ chLink: sourceChLink }) => {
-    processMap.forEach(
+  allChLinkMap.forEach(({ chLink: sourceChLink }) => {
+    allChLinkMap.forEach(
       ({ chLink: targetChLink, trChannel: targetTrChannel }) => {
         if (sourceChLink === targetChLink) return;
 
@@ -112,7 +116,7 @@ export const linkChannels = async (
 
   // save to db
   const promises: Promise<void>[] = [];
-  processMap.forEach(({ chLink }) => {
+  allChLinkMap.forEach(({ chLink }) => {
     promises.push(
       (async () => {
         await channelLinks.update(chLink);
@@ -122,6 +126,35 @@ export const linkChannels = async (
   await Promise.all(promises);
 
   return linked;
+};
+
+export const buildAllChannelsLinkMap = async (channelLinks: IChannelLink[]) => {
+  const jobQueue: IChannelLink[] = [...channelLinks];
+  const allChLinkMap = new Map<string, IAllChLinkMapValue>();
+
+  // build map containing all channels
+  while (jobQueue.length) {
+    const chLink = jobQueue.shift()!;
+
+    for (const link of chLink.links) {
+      if (allChLinkMap.get(link.id)) continue;
+
+      const [linkTrChannel, linkChLink] = await Promise.all([
+        translateChannels.get(link.id),
+        getChLink(link.id, chLink.guildId),
+      ]);
+      jobQueue.push(linkChLink);
+
+      if (!linkTrChannel) continue;
+
+      allChLinkMap.set(linkChLink.id, {
+        chLink: linkChLink,
+        trChannel: linkTrChannel,
+      });
+    }
+  }
+
+  return allChLinkMap;
 };
 
 const execute = async (interaction: ChatInputCommandInteraction) => {
@@ -180,6 +213,19 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     getChLink(targetChannelId, interaction.guildId),
   ]);
 
+  const allChLinkMap = await buildAllChannelsLinkMap([
+    sourceChLink,
+    targetChLink,
+  ]);
+
+  // don't link if reached linking limit
+  if (allChLinkMap.size >= CHANNEL_LINK_LIMIT) {
+    await interaction.reply({
+      content: `<#${sourceChannelId}> **(${sourceTrChannel.sourceLang})** and <#${targetChannelId}> **(${targetTrChannel.sourceLang})** are **not linked** because you already reached the linking limit of ${CHANNEL_LINK_LIMIT}!`,
+    });
+    return;
+  }
+
   let linked = false;
 
   // link unidirectional
@@ -206,44 +252,19 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     return;
   }
 
-  // link recursive
-  const jobQueue = [sourceChLink, targetChLink];
-  const toProcessMap = new Map<string, IChProcessMapValue>();
-
-  // already add these to map to save time
-  toProcessMap.set(sourceChLink.id, {
+  // link recursively
+  // already add these to map to save time since they're already done as well
+  allChLinkMap.set(sourceChLink.id, {
     chLink: sourceChLink,
     trChannel: sourceTrChannel,
   });
-  toProcessMap.set(targetChLink.id, {
+  allChLinkMap.set(targetChLink.id, {
     chLink: targetChLink,
     trChannel: targetTrChannel,
   });
 
-  // build map containing all channels
-  while (jobQueue.length) {
-    const chLink = jobQueue.shift()!;
-
-    for (const link of chLink.links) {
-      if (toProcessMap.get(link.id)) continue;
-
-      const [linkTrChannel, linkChLink] = await Promise.all([
-        translateChannels.get(link.id),
-        getChLink(link.id, interaction.guildId),
-      ]);
-      jobQueue.push(linkChLink);
-
-      if (!linkTrChannel) continue;
-
-      toProcessMap.set(linkChLink.id, {
-        chLink: linkChLink,
-        trChannel: linkTrChannel,
-      });
-    }
-  }
-
   // start linking recursively O(n^2) [actually O(n^3) because of linkChannel()]
-  linked = (await linkChannels(toProcessMap)) || linked;
+  linked = (await linkChannels(allChLinkMap)) || linked;
 
   await interaction.reply({
     content: linked

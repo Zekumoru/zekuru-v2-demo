@@ -6,7 +6,13 @@ import {
 } from 'discord.js';
 import { createCommand } from '../../types/DiscordCommand';
 import translateChannels from '../../cache/translateChannels';
-import { IChProcessMapValue, getChLink, linkChannels } from './link';
+import {
+  CHANNEL_LINK_LIMIT,
+  IAllChLinkMapValue,
+  buildAllChannelsLinkMap,
+  getChLink,
+  linkChannels,
+} from './link';
 
 const CHANNEL_ID_REGEX = /<#\d*>/g;
 
@@ -56,7 +62,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   // map for storing ids that aren't language channels to tell the user
   const nonTrChannelIdsMap = new Collection<string, boolean>();
 
-  const chProcessMap = new Collection<string, IChProcessMapValue>();
+  const chProcessMap = new Collection<string, IAllChLinkMapValue>();
   await Promise.all(
     channelTags.map(async (channelTag) => {
       const channelId = channelTag.slice(2, channelTag.length - 1);
@@ -99,11 +105,26 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     return;
   }
 
-  // start linking O(n^2) [actual O(n^3) because of linking checks]
-  const linked = await linkChannels(chProcessMap);
   const linkedChannelsString = stringChannels(
     chProcessMap.map((_, channelId) => channelId)
   );
+
+  // don't link if reached linking limit
+  const allChLinkMap = await buildAllChannelsLinkMap(
+    Array.from(chProcessMap, ([_key, item]) => item.chLink)
+  );
+  if (
+    allChLinkMap.size >= CHANNEL_LINK_LIMIT ||
+    chProcessMap.size >= CHANNEL_LINK_LIMIT
+  ) {
+    await interaction.reply({
+      content: `${linkedChannelsString} are **not linked** because you already reached the linking limit of ${CHANNEL_LINK_LIMIT}!`,
+    });
+    return;
+  }
+
+  // start linking O(n^2) [actual O(n^3) because of linking checks]
+  const linked = await linkChannels(chProcessMap);
 
   if (!linked) {
     interaction.reply({
