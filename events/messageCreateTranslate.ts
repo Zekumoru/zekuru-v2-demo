@@ -21,6 +21,7 @@ import translatorCache from '../cache/translatorCache';
 import { buildEmbed } from '../utils/commands/buildLongContentEmbeds';
 
 export const DISCORD_MESSAGE_CHARS_LIMIT = 2000;
+export const DISCORD_ATTACHMENT_SIZE_LIMIT = 25 * 1024 * 1024; // 25 MB
 
 export const translateContent = async (
   content: string,
@@ -231,20 +232,55 @@ const translateChannel = async (
       );
     }
 
-    const attachments = message.attachments.map((attachment) => attachment);
+    let bigAttachmentCount = 0;
+    const attachments = message.attachments
+      .map((attachment) => attachment)
+      .filter((attachment) => {
+        if (attachment.size > DISCORD_ATTACHMENT_SIZE_LIMIT) {
+          bigAttachmentCount++;
+          return false; // don't include it for sending to other translate channels
+        }
+        return true;
+      });
 
-    const webhookMessage = await webhook.send({
-      username,
-      avatarURL,
-      content: addReplyPing(translatedContent, replyAuthorId),
-      files: attachments,
-      embeds: reply ? [reply.embed] : undefined,
-    });
+    const webhookMessage =
+      translatedContent || attachments.length || reply
+        ? await webhook.send({
+            username,
+            avatarURL,
+            content: addReplyPing(translatedContent, replyAuthorId),
+            files: attachments,
+            embeds: reply ? [reply.embed] : undefined,
+          })
+        : undefined;
+
+    // build warnings strings
+    const strBuilder: string[] = [];
 
     // notify user if they sent a message over 2K
     if (message.content.length > DISCORD_MESSAGE_CHARS_LIMIT) {
+      strBuilder.push(
+        `**Warning:** You sent a message over 2000 characters. Due to Discord's characters limit, only the first 2000 characters will be translated.`
+      );
+    }
+
+    // notify user if they sent a an attachment over 25 MB
+    if (bigAttachmentCount) {
+      strBuilder.push(
+        `**Warning:** You sent ${
+          bigAttachmentCount === 1 ? `an attachment` : `attachments`
+        } over 25MB (in <#${
+          message.channelId
+        }>). Due to Discord's attachment size limit, ${
+          bigAttachmentCount === 1 ? `it` : `they`
+        } won't be sent to other translate channels.`
+      );
+    }
+
+    // notify user if they sent a message over 2K
+    if (strBuilder.length) {
       await message.reply({
-        content: `**Warning:** You sent a message over 2000 characters. Due to Discord's characters limit, only the first 2000 characters will be translated.`,
+        content: strBuilder.join('\n'),
       });
     }
 
