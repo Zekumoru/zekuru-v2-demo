@@ -5,12 +5,13 @@ interface ITagTranscoder {
   decode: (message: string, tagTable: TTagTable) => string;
 }
 
-const DISCORD_TAG_REGEX =
-  /(<a?[:@][\w:]*>)|(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&\/=]*))/g;
+// Ignore syntax: (discord tags | links | code blocks)
+const DISCORD_IGNORE_REGEX =
+  /(<a?[:@][\w:]*>)|(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&\/=]*))|(```((?!\s)|\r\n|\r|\n|.)*```)/g;
 
 const tagTranscoder: ITagTranscoder = {
   encode: (message) => {
-    const matches = message.matchAll(DISCORD_TAG_REGEX);
+    const matches = message.matchAll(DISCORD_IGNORE_REGEX);
     const tagTable: TTagTable = new Map();
     const tokens: string[] = [];
 
@@ -33,7 +34,7 @@ const tagTranscoder: ITagTranscoder = {
     return [tokens.join(''), tagTable];
   },
   decode: (message, tagTable) => {
-    const matches = message.matchAll(DISCORD_TAG_REGEX);
+    const matches = message.matchAll(DISCORD_IGNORE_REGEX);
     const tokens: string[] = [];
 
     let lastIndex = 0;
