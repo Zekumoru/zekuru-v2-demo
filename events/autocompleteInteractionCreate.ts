@@ -1,5 +1,6 @@
 import { CacheType, Events, Interaction } from 'discord.js';
 import { DiscordEvent } from '../types/DiscordEvent';
+import { errorDebug } from '../utils/logger';
 
 export default {
   name: Events.InteractionCreate,
@@ -13,7 +14,7 @@ export default {
     try {
       await command.autocomplete(interaction);
     } catch (error) {
-      console.error(error);
+      errorDebug(error);
     }
   },
 } as DiscordEvent;

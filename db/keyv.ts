@@ -1,4 +1,5 @@
 import Keyv from 'keyv';
+import { errorDebug } from '../utils/logger';
 
 const MONGODB_CONNECTION_STRING = process.env.MONGODB_CONNECTION_STRING;
 const keyv = {
@@ -9,7 +10,7 @@ const keyv = {
 
 for (const [key, namespace] of Object.entries(keyv)) {
   namespace.on('error', (error) => {
-    console.error(`Keyv namespace '${key}' connection error`, error);
+    errorDebug(`Keyv namespace '${key}' connection error`, error);
   });
 }
 
