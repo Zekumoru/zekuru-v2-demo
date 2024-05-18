@@ -1,6 +1,5 @@
 import {
   ChannelType,
-  EmbedBuilder,
   Events,
   Message,
   MessageType,
@@ -21,6 +20,8 @@ import MessageLink, {
 import translatorCache from '../cache/translatorCache';
 import { buildEmbed } from '../utils/commands/buildLongContentEmbeds';
 
+const DISCORD_MESSAGE_CHARS_LIMIT = 2000;
+
 export const translateContent = async (
   content: string,
   guildId: string,
@@ -29,7 +30,14 @@ export const translateContent = async (
 ) => {
   if (content.trim() === '') return;
 
-  const [messageToTranslate, tagTable] = tagTranscoder.encode(content);
+  // because Discord has 2K characters limit, trim it to 2K
+  // notify the original author that his/her text has been trimmed
+  let toTranslate =
+    content.length <= DISCORD_MESSAGE_CHARS_LIMIT
+      ? content
+      : content.slice(0, DISCORD_MESSAGE_CHARS_LIMIT);
+
+  const [messageToTranslate, tagTable] = tagTranscoder.encode(toTranslate);
 
   const translator = (await translatorCache.get(guildId))!;
   const translatedContentToDecode = (
@@ -225,13 +233,22 @@ const translateChannel = async (
 
     const attachments = message.attachments.map((attachment) => attachment);
 
-    return await webhook.send({
+    await webhook.send({
       username,
       avatarURL,
       content: addReplyPing(translatedContent, replyAuthorId),
       files: attachments,
       embeds: reply ? [reply.embed] : undefined,
     });
+
+    // notify user if they sent a message over 2K
+    if (message.content.length > DISCORD_MESSAGE_CHARS_LIMIT) {
+      await message.reply({
+        content: `**Warning:** You sent a message over 2000 characters. Due to Discord's characters limit, only the first 2000 characters will be translated.`,
+      });
+    }
+
+    return;
   } catch (error) {
     errorDebug(error);
   }
