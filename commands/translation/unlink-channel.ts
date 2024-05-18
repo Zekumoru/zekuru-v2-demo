@@ -9,7 +9,7 @@ import { unlinkChannel } from './unlink';
 
 const data = new SlashCommandBuilder()
   .setName('unlink-channel')
-  .setDescription('Unlinks two translation channels.')
+  .setDescription('Unlinks channel from all other translate channels.')
   .addChannelOption((option) =>
     option
       .setName('channel')
@@ -32,14 +32,15 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     return;
   }
 
-  const promises: Promise<boolean>[] = [];
-  channelLink.links.forEach(({ id }) =>
-    promises.push(unlinkChannel(channelLink, id))
-  );
-
-  // no need to delete the channelLink here, the
-  // unlinkChannel() will already handle it.
-  await Promise.all(promises);
+  for (const { id } of channelLink.links) {
+    const otherChannelLink = await channelLinks.get(id);
+    if (otherChannelLink) {
+      // no need to delete the channelLink here, the
+      // unlinkChannel() will already handle it.
+      await unlinkChannel(otherChannelLink, channelLink.id);
+      await unlinkChannel(channelLink, id);
+    }
+  }
 
   await interaction.reply({
     content: `<#${channelId}> is now unlinked!`,
