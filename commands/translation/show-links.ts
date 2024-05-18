@@ -91,7 +91,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
   // Handle 2K characters limit
   const content = `**Showing all translate channels links**\nThere are a total of ${
     chLinks.length
-  } translate channels.\n\n${strBuilder.join('')}`;
+  } channels that have links.\n\n${strBuilder.join('')}`;
   if (content.length <= 2000) {
     interaction.reply({
       content,
