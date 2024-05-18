@@ -254,12 +254,13 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
 
   // link recursively
   // already add these to map to save time since they're already done as well
+  // refetch channels links due to bidirectional linking
   allChLinkMap.set(sourceChLink.id, {
-    chLink: sourceChLink,
+    chLink: await getChLink(sourceChannelId, interaction.guildId),
     trChannel: sourceTrChannel,
   });
   allChLinkMap.set(targetChLink.id, {
-    chLink: targetChLink,
+    chLink: await getChLink(targetChannelId, interaction.guildId),
     trChannel: targetTrChannel,
   });
 
