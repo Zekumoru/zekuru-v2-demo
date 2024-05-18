@@ -22,7 +22,7 @@ export default {
 
     const now = Date.now();
     const timestamps = cooldowns.get(command.data.name);
-    const defaultCooldownDuration = 3;
+    const defaultCooldownDuration = 1;
     const cooldownAmount =
       (command.cooldown ?? defaultCooldownDuration) * 1_000;
 
