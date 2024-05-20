@@ -6,9 +6,8 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { createCommand } from '../../types/DiscordCommand';
-import translatorCache from '../../cache/translatorCache';
-import { updateTranslateMessages } from '../../events/messageUpdateTranslate';
+import { createCommand } from '../types/DiscordCommand';
+import translatorCache from '../cache/translatorCache';
 
 const data = new SlashCommandBuilder()
   .setName('sign-out')

@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { createCommand } from '../../types/DiscordCommand';
-import translatorCache from '../../cache/translatorCache';
+import { createCommand } from '../types/DiscordCommand';
+import translatorCache from '../cache/translatorCache';
 
 const data = new SlashCommandBuilder()
   .setName('usage')

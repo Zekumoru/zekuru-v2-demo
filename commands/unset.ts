@@ -3,8 +3,8 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { createCommand } from '../../types/DiscordCommand';
-import translateChannels from '../../cache/translateChannels';
+import { createCommand } from '../types/DiscordCommand';
+import translateChannels from '../cache/translateChannels';
 
 const data = new SlashCommandBuilder()
   .setName('unset')

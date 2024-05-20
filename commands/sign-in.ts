@@ -3,10 +3,10 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { createCommand } from '../../types/DiscordCommand';
-import translatorCache from '../../cache/translatorCache';
+import { createCommand } from '../types/DiscordCommand';
+import translatorCache from '../cache/translatorCache';
 import { AuthorizationError } from 'deepl-node';
-import { errorDebug } from '../../utils/logger';
+import { errorDebug } from '../utils/logger';
 
 const data = new SlashCommandBuilder()
   .setName('sign-in')

@@ -41,27 +41,22 @@ const client = new Client({
 client.commands = new Collection();
 client.cooldowns = new Collection();
 
-const foldersPath = path.join(__dirname, 'commands');
-const commandFolders = fs.readdirSync(foldersPath);
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = fs
+  .readdirSync(commandsPath)
+  .filter((file) => file.endsWith('.ts'));
 
-for (const folder of commandFolders) {
-  const commandsPath = path.join(foldersPath, folder);
-  const commandFiles = fs
-    .readdirSync(commandsPath)
-    .filter((file) => file.endsWith('.ts'));
-
-  for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath).default;
-    // Set a new item in the Collection with the key as the command name and the
-    // value as the exported module
-    if ('data' in command && 'execute' in command) {
-      client.commands.set(command.data.name, command);
-    } else {
-      appDebug(
-        `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
-      );
-    }
+for (const file of commandFiles) {
+  const filePath = path.join(commandsPath, file);
+  const command = require(filePath).default;
+  // Set a new item in the Collection with the key as the command name and the
+  // value as the exported module
+  if ('data' in command && 'execute' in command) {
+    client.commands.set(command.data.name, command);
+  } else {
+    appDebug(
+      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
+    );
   }
 }
 

@@ -4,8 +4,8 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { createCommand } from '../../types/DiscordCommand';
-import translateChannels from '../../cache/translateChannels';
+import { createCommand } from '../types/DiscordCommand';
+import translateChannels from '../cache/translateChannels';
 import {
   CHANNEL_LINK_LIMIT,
   IAllChLinkMapValue,

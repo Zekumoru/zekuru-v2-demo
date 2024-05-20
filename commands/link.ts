@@ -3,11 +3,11 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { createCommand } from '../../types/DiscordCommand';
-import translateChannels from '../../cache/translateChannels';
-import channelLinks from '../../cache/channelLinks';
-import { IChannelLink } from '../../models/ChannelLink';
-import { ITranslateChannel } from '../../models/TranslateChannel';
+import { createCommand } from '../types/DiscordCommand';
+import translateChannels from '../cache/translateChannels';
+import channelLinks from '../cache/channelLinks';
+import { IChannelLink } from '../models/ChannelLink';
+import { ITranslateChannel } from '../models/TranslateChannel';
 
 export const CHANNEL_LINK_LIMIT = isNaN(Number(process.env.CHANNEL_LINK_LIMIT))
   ? 5

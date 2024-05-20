@@ -7,10 +7,10 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { createCommand } from '../../types/DiscordCommand';
-import { sourceLanguages, targetLanguages } from '../../translation/languages';
-import translateChannels from '../../cache/translateChannels';
-import { updateTranslateMessages } from '../../events/messageUpdateTranslate';
+import { createCommand } from '../types/DiscordCommand';
+import { sourceLanguages, targetLanguages } from '../translation/languages';
+import translateChannels from '../cache/translateChannels';
+import { updateTranslateMessages } from '../events/messageUpdateTranslate';
 
 const data = new SlashCommandBuilder()
   .setName('set')

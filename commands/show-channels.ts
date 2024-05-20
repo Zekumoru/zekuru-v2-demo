@@ -3,11 +3,11 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { createCommand } from '../../types/DiscordCommand';
-import TranslateChannel from '../../models/TranslateChannel';
-import channelLinks from '../../cache/channelLinks';
-import { sourceLanguages } from '../../translation/languages';
-import buildLongContentEmbeds from '../../utils/commands/buildLongContentEmbeds';
+import { createCommand } from '../types/DiscordCommand';
+import TranslateChannel from '../models/TranslateChannel';
+import channelLinks from '../cache/channelLinks';
+import { sourceLanguages } from '../translation/languages';
+import buildLongContentEmbeds from '../utils/commands/buildLongContentEmbeds';
 
 const data = new SlashCommandBuilder()
   .setName('show-channels')
