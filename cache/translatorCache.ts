@@ -7,8 +7,8 @@ import { decrypt, encrypt } from '../utils/crypt';
 
 export const translatorOptions: TranslatorOptions = {
   appInfo: {
-    appName: 'Guide Bot (Zekuru-v2 Demo)',
-    appVersion: '0.0.0',
+    appName: 'Zekuru-v2 Demo',
+    appVersion: '1.0.0',
   },
   minTimeout: 500, // 500 ms
   maxRetries: 10,

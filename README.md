@@ -1,4 +1,4 @@
-# Zekuru-v2 Demo (Guide Bot)
+# Zekuru-v2 Demo
 
 This is the demo version of Zekuru-v2, a Discord translation bot!
 

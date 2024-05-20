@@ -1,9 +1,9 @@
 {
-  "name": "discord-bot",
-  "version": "0.0.0",
-  "description": "A tutorial bot.",
+  "name": "zekuru-v2-demo",
+  "version": "1.0.0",
+  "description": "Zekuru-v2 Demo: A feature-rich Discord translator bot for real-time seamless communication between languages.",
   "main": "app.ts",
-  "author": "Zekumoru",
+  "author": "Zekumoru Dragonhart <dev@zekumoru.com>",
   "license": "MIT",
   "scripts": {
     "dev": "nodemon --files",
