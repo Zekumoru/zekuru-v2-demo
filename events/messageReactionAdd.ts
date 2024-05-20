@@ -11,7 +11,7 @@ import { DiscordEvent } from '../types/DiscordEvent';
 import { errorDebug } from '../utils/logger';
 import MessageLink, { IMessageLink } from '../models/MessageLink';
 import channelLinks from '../cache/channelLinks';
-import getMessagesFromMessageLink from '../utils/events/getMessagesFromMessageLink';
+import getMessagesFromMessageLink from '../commands/utilities/getMessagesFromMessageLink';
 
 export const getMessagesLink = async (
   reaction: MessageReaction | PartialMessageReaction

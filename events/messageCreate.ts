@@ -8,7 +8,7 @@ import {
 import { DiscordEvent } from '../types/DiscordEvent';
 import webhookCache from '../cache/webhookCache';
 import { errorDebug } from '../utils/logger';
-import buildLongContentEmbeds from '../utils/commands/buildLongContentEmbeds';
+import buildLongContentEmbeds from '../commands/utilities/buildLongContentEmbeds';
 
 export default {
   name: Events.MessageCreate,

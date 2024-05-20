@@ -22,7 +22,7 @@ import MessageLink, {
   IMessageLinkItem,
 } from '../models/MessageLink';
 import translatorCache from '../cache/translatorCache';
-import { buildEmbed } from '../utils/commands/buildLongContentEmbeds';
+import { buildEmbed } from '../commands/utilities/buildLongContentEmbeds';
 
 export const DISCORD_MESSAGE_CHARS_LIMIT = 2000;
 export const DISCORD_ATTACHMENT_SIZE_LIMIT = 25 * 1024 * 1024; // 25 MB

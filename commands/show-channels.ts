@@ -7,7 +7,7 @@ import { createCommand } from '../types/DiscordCommand';
 import TranslateChannel from '../models/TranslateChannel';
 import channelLinks from '../cache/channelLinks';
 import { sourceLanguages } from '../translation/languages';
-import buildLongContentEmbeds from '../utils/commands/buildLongContentEmbeds';
+import buildLongContentEmbeds from './utilities/buildLongContentEmbeds';
 
 const data = new SlashCommandBuilder()
   .setName('show-channels')
