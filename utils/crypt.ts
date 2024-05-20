@@ -8,6 +8,12 @@ const secretKey = Buffer.from(
   'hex'
 );
 
+/**
+ * Encrypts a given text string using AES-256-GCM.
+ *
+ * @param text The plain text string to be encrypted.
+ * @returns A string containing the encrypted text, authentication tag, and initialization vector, concatenated with `|`.
+ */
 export const encrypt = (text: string) => {
   if (!process.env.CIPHER_SECRET_KEY)
     errorDebug(`[WARNING] Secret key is not set!`);
@@ -20,6 +26,12 @@ export const encrypt = (text: string) => {
   return encrypted + '|' + authTag + '|' + Buffer.from(iv).toString('hex');
 };
 
+/**
+ * Decrypts an encrypted string back to its original text.
+ *
+ * @param encrypted The encrypted string, which contains the encrypted text, authentication tag, and initialization vector concatenated with `|`.
+ * @returns The original plain text string.
+ */
 export const decrypt = (encrypted: string) => {
   const [encryptedText, authTag, iv] = encrypted.split('|');
 
