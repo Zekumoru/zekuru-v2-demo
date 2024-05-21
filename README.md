@@ -101,13 +101,21 @@ This is how many channels **can be linked** together. This is not the number of 
 
 **Don't try to change its value unless you know what you're doing.** This is used for logging the output of the bot.
 
-4. And finally, start the bot!
+4. Run the bot.
 
 ```cmd
 yarn start
 ```
 
 > To have the bot running in the background, you can check out [pm2](https://pm2.keymetrics.io/) which is a process manager. Use the following command to run the bot in the background: `pm2 start ts-node --name "Zekuru-v2 Demo" -- --files app.ts`.
+
+5. Invite the bot to your server using the link below replacing `CLIENT_ID_HERE` with your bot's **CLIENT_ID**.
+
+```link
+https://discord.com/oauth2/authorize?client_id=CLIENT_ID_HERE&permissions=137976212544&scope=bot+applications.commands
+```
+
+6. And start creating channels, setting languages on them, linking those channels, and finally, chatting!
 
 ## Supported Languages
 
