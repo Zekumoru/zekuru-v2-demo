@@ -6,8 +6,10 @@
   "author": "Zekumoru Dragonhart <dev@zekumoru.com>",
   "license": "MIT",
   "scripts": {
+    "start": "ts-node --files app.ts",
     "dev": "nodemon --files",
-    "deploy-commands": "ts-node --files .\\deploy-command.ts"
+    "deploy-commands": "ts-node --files .\\deploy-command.ts",
+    "create-cipher-secret": "ts-node .\\create-cipher-secret.ts"
   },
   "dependencies": {
     "debug": "^4.3.4",
