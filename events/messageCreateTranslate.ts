@@ -36,11 +36,10 @@ export const translateContent = async (
   if (content.trim() === '') return;
 
   // because Discord has 2K characters limit, trim it to 2K
-  // notify the original author that his/her text has been trimmed
-  let toTranslate =
-    content.length <= DISCORD_MESSAGE_CHARS_LIMIT
-      ? content
-      : content.slice(0, DISCORD_MESSAGE_CHARS_LIMIT);
+  const userReachedLimit = content.length > DISCORD_MESSAGE_CHARS_LIMIT;
+  let toTranslate = userReachedLimit
+    ? content.slice(0, DISCORD_MESSAGE_CHARS_LIMIT)
+    : content;
 
   const [messageToTranslate, tagTable] = tagTranscoder.encode(toTranslate);
 
@@ -56,7 +55,16 @@ export const translateContent = async (
     tagTable
   );
 
-  return translatedContent;
+  // check if the translated content reached limit
+  const botReachedLimit =
+    translatedContent.length > DISCORD_MESSAGE_CHARS_LIMIT;
+  return {
+    content: botReachedLimit
+      ? translatedContent.slice(0, DISCORD_MESSAGE_CHARS_LIMIT)
+      : translatedContent,
+    userReachedLimit,
+    botReachedLimit,
+  };
 };
 
 const buildCommandReplyEmbed = async (
@@ -84,7 +92,7 @@ const buildCommandReplyEmbed = async (
     embed: buildEmbed(
       member?.nickname ?? message.author.displayName,
       member?.avatarURL({ size: 32 }) ?? author.displayAvatarURL({ size: 32 }),
-      `${translatedContent} \`/${message.interaction.commandName}\``
+      `${translatedContent.content} \`/${message.interaction.commandName}\``
     ),
     message: message,
   };
@@ -229,13 +237,30 @@ const translateChannel = async (
       }
     }
 
+    // build warnings strings
+    const strBuilder: string[] = [];
     if (translatedContent === undefined) {
-      translatedContent = await translateContent(
+      const translatedData = await translateContent(
         message.content,
         message.guildId!,
         sourceTrChannel.sourceLang,
         targetTrChannel.targetLang
       );
+      translatedContent = translatedData?.content;
+
+      // notify user if they sent a message over 2K
+      if (translatedData?.userReachedLimit) {
+        strBuilder.push(
+          `**Warning:** You sent a message over 2000 characters. Due to Discord's characters limit, only the first 2000 characters will be translated.`
+        );
+      }
+
+      // notify user if the bot's translated message is over 2K
+      if (translatedData?.botReachedLimit) {
+        strBuilder.push(
+          `**Warning:** The translated message in <#${channelId}> is over 2000 characters. Due to Discord's characters limit, only the first 2000 characters will be shown.`
+        );
+      }
     }
 
     let bigAttachmentCount = 0;
@@ -260,16 +285,6 @@ const translateChannel = async (
           })
         : undefined;
 
-    // build warnings strings
-    const strBuilder: string[] = [];
-
-    // notify user if they sent a message over 2K
-    if (message.content.length > DISCORD_MESSAGE_CHARS_LIMIT) {
-      strBuilder.push(
-        `**Warning:** You sent a message over 2000 characters. Due to Discord's characters limit, only the first 2000 characters will be translated.`
-      );
-    }
-
     // notify user if they sent a an attachment over 25 MB
     if (bigAttachmentCount) {
       strBuilder.push(
@@ -283,7 +298,6 @@ const translateChannel = async (
       );
     }
 
-    // notify user if they sent a message over 2K
     if (strBuilder.length) {
       await message.reply({
         content: strBuilder.join('\n'),

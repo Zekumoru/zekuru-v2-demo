@@ -41,7 +41,7 @@ export const updateTranslateMessages = async (
       if (!targetTrChannel) return;
 
       try {
-        const translatedContent = await translateContent(
+        const translatedData = await translateContent(
           newMessage.content!,
           newMessage.guildId!,
           sourceTrChannel.sourceLang,
@@ -50,7 +50,9 @@ export const updateTranslateMessages = async (
 
         // edit old message
         const webhook = await webhookCache.get(message.channel);
-        await webhook.editMessage(message.id, { content: translatedContent });
+        await webhook.editMessage(message.id, {
+          content: translatedData?.content,
+        });
 
         // notify user if they edited the message over 2K
         if (newMessage.content!.length > DISCORD_MESSAGE_CHARS_LIMIT) {
